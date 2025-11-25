@@ -28,4 +28,8 @@ public class DocumentService {
         Document saved = documentRepository.save(doc);
         return saved.getId();
     }
+    public Document getDocument(Long documentId) {
+        return documentRepository.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 문서를 찾을 수 없습니다. ID=" + documentId));
+    }
 }
