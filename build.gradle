@@ -26,11 +26,26 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'com.google.crypto.tink:tink:1.15.0' // 암호화 Google Tink 라이브러리
+
+    // 암호화 라이브러리내 보안 패치 적용
+    implementation 'com.google.protobuf:protobuf-java:3.25.5'
+    implementation 'com.google.guava:guava:33.3.1-android'
+
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // 데이터베이스(JPA) 라이브러리
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' // JUnit 5 의존성
 	compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
 	runtimeOnly 'com.h2database:h2'
-	annotationProcessor 'org.projectlombok:lombok'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // 테스트에서도 사용
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
