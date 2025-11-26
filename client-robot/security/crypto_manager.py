@@ -8,7 +8,10 @@ import io
 
 class CryptoManager:
     def __init__(self):
-        # Tink 초기화 (필수)
+        try:
+            aead.register()
+            hybrid.register()
+        except Exception as e:
             print(f"⚠️ Tink 초기화 중 경고 (이미 등록됨?): {e}")
 
     # [키 교환] 클라이언트용 RSA(ECIES) 키 쌍 생성

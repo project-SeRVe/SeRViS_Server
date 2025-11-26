@@ -46,6 +46,6 @@ __pycache__/
 *.so
 
 # Virtual Environment
-client-robot/.venv/
-client-robot/venv/
-client-robot/ENV/
+client-robot2/.venv/
+client-robot2/venv/
+client-robot2/ENV/
