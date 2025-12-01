@@ -1,0 +1,21 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: serve-mariadb
+    restart: always
+    ports:
+      - "3306:3306" # 로컬 포트 3306을 컨테이너 3306과 연결 (외부 접속 허용)
+    environment:
+      - MARIADB_DATABASE=serve_db
+      - MARIADB_USER=serve_user
+      - MARIADB_PASSWORD=serve_pass
+      - MARIADB_ROOT_PASSWORD=root_secret
+      - TZ=Asia/Seoul # 시간대 설정 (선택 사항)
+    volumes:
+      - ./mariadb_data:/var/lib/mysql # 프로젝트 폴더 내에 데이터 저장 (삭제 방지)
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  mariadb_data:
