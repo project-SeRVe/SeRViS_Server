@@ -50,6 +50,14 @@ dependencies {
     // 테스트에서도 사용
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // [New] 스프링 시큐리티 (보안 로그인/인증용)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // [New] JWT 토큰 관련 (나중에 인증 토큰 만들 때 필요)
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 }
 
 tasks.named('test') {

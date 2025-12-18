@@ -6,7 +6,7 @@ import lombok.*;
 @Entity
 @Table(name = "repository_members")
 @Getter @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class RepositoryMember {

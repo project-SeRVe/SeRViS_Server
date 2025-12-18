@@ -37,6 +37,5 @@ node_modules/
 
 # If you add more local config files, list them here
 
-
 # [추가] MariaDB/MySQL 데이터 볼륨 무시
 mariadb_data/

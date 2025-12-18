@@ -13,4 +13,7 @@ public interface TeamRepoRepository extends JpaRepository<TeamRepository, Long> 
      * 기존 TeamRepository 엔티티의 String ownerId 필드를 활용.
      */
     List<TeamRepository> findAllByOwnerId(String ownerId);
+
+    // repoId로 단건 조회 (String 타입 식별자 사용 시)
+    java.util.Optional<TeamRepository> findByRepoId(String repoId);
 }

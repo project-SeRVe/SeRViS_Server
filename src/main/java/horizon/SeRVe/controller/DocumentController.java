@@ -1,43 +1,64 @@
 package horizon.SeRVe.controller;
 
-import horizon.SeRVe.dto.security.EncryptedPayloadDto;
+import horizon.SeRVe.dto.document.DocumentResponse;
+import horizon.SeRVe.dto.document.EncryptedDataResponse;
+import horizon.SeRVe.dto.document.UploadDocumentRequest;
+import horizon.SeRVe.entity.User;
 import horizon.SeRVe.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/documents")
 @RequiredArgsConstructor
 public class DocumentController {
 
     private final DocumentService documentService;
 
-    @PostMapping
-    public ResponseEntity<String> uploadDocument(@RequestBody EncryptedPayloadDto request) {
-        // 실제로는 토큰에서 유저 ID를 꺼내야 하지만, 시뮬레이션을 위해 "tester"로 고정
-        String uploaderId = "tester";
-        String fileName = "unknown.vector"; // 파일명도 DTO에 추가하면 좋음
+    /**
+     * [Modified] 문서 업로드
+     * - URL: /api/repositories/{repoId}/documents (계획 준수)
+     * - Body: UploadDocumentRequest (DTO 변경)
+     */
+    @PostMapping("/api/repositories/{repoId}/documents")
+    public ResponseEntity<Void> uploadDocument(
+            @PathVariable String repoId,
+            @AuthenticationPrincipal User user,
+            @RequestBody UploadDocumentRequest request) {
 
-        Long docId = documentService.uploadDocument(
-                request.getRepositoryId(),
-                fileName,
-                request.getContent(),
-                uploaderId
-        );
-
-        return ResponseEntity.ok("문서 업로드 성공! ID: " + docId);
+        // 수정된 Service 메서드 호출
+        documentService.uploadDocument(repoId, user.getUserId(), request);
+        return ResponseEntity.ok().build();
     }
-    @GetMapping("/{documentId}")
-    public ResponseEntity<EncryptedPayloadDto> getDocument(@PathVariable Long documentId) {
-        // 1. DB에서 조회
-        horizon.SeRVe.entity.Document doc = documentService.getDocument(documentId);
 
-        // 2. DTO에 포장 (암호문 그대로)
-        EncryptedPayloadDto response = new EncryptedPayloadDto();
-        response.setRepositoryId(doc.getTeamRepository().getId());
-        response.setContent(doc.getEncryptedContent()); // 암호화된 내용
-
+    // 문서 목록 조회
+    @GetMapping("/api/repositories/{repoId}/documents")
+    public ResponseEntity<List<DocumentResponse>> getDocuments(@PathVariable String repoId) {
+        List<DocumentResponse> response = documentService.getDocuments(repoId);
         return ResponseEntity.ok(response);
+    }
+
+    // 데이터 다운로드
+    @GetMapping("/api/documents/{docId}/data")
+    public ResponseEntity<EncryptedDataResponse> downloadData(
+            @PathVariable String docId,
+            @AuthenticationPrincipal User user) {
+
+        EncryptedDataResponse response = documentService.getData(docId, user.getUserId());
+        return ResponseEntity.ok(response);
+    }
+
+    // 문서 삭제
+    @DeleteMapping("/api/repositories/{repoId}/documents/{docId}")
+    public ResponseEntity<Void> deleteDocument(
+            @PathVariable String repoId,
+            @PathVariable String docId,
+            @AuthenticationPrincipal User user) {
+
+        documentService.deleteDocument(docId, user.getUserId());
+        return ResponseEntity.ok().build();
     }
 }

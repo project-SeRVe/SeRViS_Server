@@ -37,4 +37,11 @@ public class TeamRepository {
         this.description = description;
         this.ownerId = ownerId;
     }
+
+    @Column(unique = true)
+    private String repoId;
+
+    public String getRepoId() {
+        return repoId;
+    }
 }

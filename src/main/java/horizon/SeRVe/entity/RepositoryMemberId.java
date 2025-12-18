@@ -11,4 +11,7 @@ import java.io.Serializable;
 public class RepositoryMemberId implements Serializable {
     private Long repoId;
     private String userId;
+
+    //private String teamRepository; // TeamRepository의 repoId 타입과 일치해야 함
+    //private String user;
 }

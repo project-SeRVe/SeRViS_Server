@@ -1,40 +1,48 @@
 package horizon.SeRVe.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "documents")
-@Getter @Setter
-@NoArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Document {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // DB PK
 
-    // 어느 저장소(금고)에 들어있는지
+    @Column(unique = true, nullable = false)
+    private String documentId; // 외부 식별용 UUID
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "repository_id")
     private TeamRepository teamRepository;
 
-    private String originalFileName; // 원래 파일 이름 (예: design_v1.pdf)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploader_id")
+    private User uploader; // 계획대로 User 객체 매핑
 
-    @Lob // 대용량 데이터 저장용
-    @Column(columnDefinition = "TEXT")
-    private String encryptedContent; // ★핵심: 암호화된 내용 (Base64)
+    private String originalFileName;
 
-    private String uploadedBy; // 올린 사람
+    private String fileType;
 
-    private LocalDateTime uploadedAt = LocalDateTime.now();
+    // 메타데이터와 실제 데이터 분리 (1:1 관계)
+    @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private EncryptedData encryptedData;
 
-    public Document(TeamRepository teamRepository, String originalFileName, String encryptedContent, String uploadedBy) {
-        this.teamRepository = teamRepository;
-        this.originalFileName = originalFileName;
-        this.encryptedContent = encryptedContent;
-        this.uploadedBy = uploadedBy;
+    private LocalDateTime uploadedAt;
+
+    @PrePersist
+    public void prePersist() {
+        this.uploadedAt = LocalDateTime.now();
+    }
+
+    public void setEncryptedData(EncryptedData encryptedData) {
+        this.encryptedData = encryptedData;
     }
 }
