@@ -81,7 +81,7 @@ class ServiceTest {
         String encryptedKeyOwner = Base64.getEncoder().encodeToString(wrappedKeyForOwner);
 
         // RepoService 호출 (String 파라미터 4개 버전)
-        Long teamId = repoService.createRepository( // 기존: repoId
+        String teamId = repoService.createRepository( // 기존: repoId
                 "Top Secret Project",
                 "Classified Documents",
                 owner.getUserId(),

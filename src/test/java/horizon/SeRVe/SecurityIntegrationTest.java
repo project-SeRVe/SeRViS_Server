@@ -92,7 +92,7 @@ class SecurityIntegrationTest {
 
         // 1-3. RepoService.createRepository 호출
         // (Controller가 호출하는 방식 그대로 파라미터 전달: ownerId 포함)
-        Long teamId = repoService.createRepository( // 기존: repoId
+        String teamId = repoService.createRepository( // 기존: repoId
                 "Secure Vault",
                 "Top Secret Logic Check",
                 owner.getUserId(),      // Controller에서 request.getOwnerId()로 넘기는 값

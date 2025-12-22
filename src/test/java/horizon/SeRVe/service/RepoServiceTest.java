@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.UUID;
 
 import java.util.Optional;
 
@@ -43,7 +44,7 @@ class RepoServiceTest {
         String encryptedTeamKey = "encryptedKey";
 
         Team mockTeam = new Team(name, description, ownerId); // 기존: TeamRepository(엔티티)
-        mockTeam.setId(1L); // ID가 생성되었다고 가정
+        mockTeam.setTeamId(UUID.randomUUID().toString()); // ID가 생성되었다고 가정
 
         User mockOwner = User.builder()
                 .userId(ownerId)
@@ -58,10 +59,10 @@ class RepoServiceTest {
         given(userRepository.findById(ownerId)).willReturn(Optional.of(mockOwner));
 
         // when
-        Long teamId = repoService.createRepository(name, description, ownerId, encryptedTeamKey); // 기존: repoId
+        String teamId = repoService.createRepository(name, description, ownerId, encryptedTeamKey); // 기존: repoId
 
         // then
-        assertEquals(1L, teamId);
+        assertEquals(mockTeam.getTeamId(), teamId);
     }
 
     @Test

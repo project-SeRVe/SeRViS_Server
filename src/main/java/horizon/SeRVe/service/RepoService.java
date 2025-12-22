@@ -22,7 +22,7 @@ public class RepoService {
 
     // 저장소 생성 로직 (encryptedTeamKey 파라미터만 추가)
     @Transactional
-    public Long createRepository(String name, String description, String ownerId, String encryptedTeamKey) {
+    public String createRepository(String name, String description, String ownerId, String encryptedTeamKey) {
         // 1. 중복 이름 체크
         if (teamRepository.findByName(name).isPresent()) {
             throw new IllegalArgumentException("이미 존재하는 저장소 이름입니다.");
@@ -37,7 +37,7 @@ public class RepoService {
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        RepositoryMemberId memberId = new RepositoryMemberId(saved.getId(), owner.getUserId());
+        RepositoryMemberId memberId = new RepositoryMemberId(saved.getTeamId(), owner.getUserId());
 
         RepositoryMember adminMember = RepositoryMember.builder()
                 .id(memberId)
@@ -49,7 +49,7 @@ public class RepoService {
 
         memberRepository.save(adminMember);
 
-        return saved.getId(); // 기존처럼 ID 반환
+        return saved.getTeamId(); // 기존처럼 ID 반환
     }
 
     // [추가] 내 저장소 목록 조회
@@ -76,8 +76,8 @@ public class RepoService {
 
     // [추가] 팀 키 조회 (RAG 암호화용)
     @Transactional(readOnly = true)
-    public String getTeamKey(Long teamId, String userId) {
-        Team team = teamRepository.findById(teamId)
+    public String getTeamKey(String teamId, String userId) {
+        Team team = teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("저장소가 없습니다."));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
@@ -91,8 +91,8 @@ public class RepoService {
 
     // [추가] 저장소 삭제
     @Transactional
-    public void deleteRepo(Long teamId, String userId) {
-        Team team = teamRepository.findById(teamId)
+    public void deleteRepo(String teamId, String userId) {
+        Team team = teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("저장소가 없습니다."));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));

@@ -25,8 +25,8 @@ public class MemberService {
 
     // 1. 멤버 초대
     @Transactional
-    public void inviteMember(Long teamId, InviteMemberRequest req) {
-        Team team = teamRepository.findById(teamId)
+    public void inviteMember(String teamId, InviteMemberRequest req) {
+        Team team = teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("저장소가 없습니다."));
 
         // 이메일로 유저 찾기
@@ -40,7 +40,7 @@ public class MemberService {
         }
 
         // 멤버 추가
-        RepositoryMemberId memberId = new RepositoryMemberId(team.getId(), invitee.getUserId());
+        RepositoryMemberId memberId = new RepositoryMemberId(team.getTeamId(), invitee.getUserId());
         RepositoryMember newMember = RepositoryMember.builder()
                 .id(memberId)
                 .team(team) // 기존: teamRepository
@@ -53,8 +53,8 @@ public class MemberService {
     }
 
     // 2. 멤버 목록 조회
-    public List<MemberResponse> getMembers(Long teamId) {
-        Team team = teamRepository.findById(teamId)
+    public List<MemberResponse> getMembers(String teamId) {
+        Team team = teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("저장소가 없습니다."));
 
         // 기존: findAllByTeamRepository → findAllByTeam
@@ -65,14 +65,14 @@ public class MemberService {
 
     // 3. 멤버 강퇴
     @Transactional
-    public void kickMember(Long teamId, String targetUserId, String adminUserId) {
+    public void kickMember(String teamId, String targetUserId, String adminUserId) {
         RepositoryMember targetMember = validateAdminAndGetTarget(teamId, targetUserId, adminUserId);
         memberRepository.delete(targetMember);
     }
 
     // 4. 권한 변경
     @Transactional
-    public void updateMemberRole(Long teamId, String targetUserId, String adminUserId, UpdateRoleRequest req) {
+    public void updateMemberRole(String teamId, String targetUserId, String adminUserId, UpdateRoleRequest req) {
         RepositoryMember targetMember = validateAdminAndGetTarget(teamId, targetUserId, adminUserId);
         try {
             Role newRole = Role.valueOf(req.getRole().toUpperCase());
@@ -83,8 +83,8 @@ public class MemberService {
     }
 
     // [Helper] 권한 검증 및 타겟 조회
-    private RepositoryMember validateAdminAndGetTarget(Long teamId, String targetUserId, String adminUserId) {
-        Team team = teamRepository.findById(teamId)
+    private RepositoryMember validateAdminAndGetTarget(String teamId, String targetUserId, String adminUserId) {
+        Team team = teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("저장소가 없습니다."));
         User admin = userRepository.findById(adminUserId)
                 .orElseThrow(() -> new IllegalArgumentException("관리자 정보 오류"));

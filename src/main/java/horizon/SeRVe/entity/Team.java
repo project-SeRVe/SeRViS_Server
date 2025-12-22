@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.UUID;
 
 import java.time.LocalDateTime;
 
@@ -15,8 +16,8 @@ import java.time.LocalDateTime;
 public class Team {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "team_id", nullable = false, unique = true)
+    private String teamId;
 
     @Column(nullable = false)
     private String name; // 저장소 이름 (예: "Project Alpha")
@@ -37,12 +38,8 @@ public class Team {
         this.name = name;
         this.description = description;
         this.ownerId = ownerId;
+        // 핵심: 생성 시점에 랜덤 UUID 발급
+        this.teamId = UUID.randomUUID().toString();
     }
 
-    @Column(unique = true)
-    private String teamId; // 기존: repoId
-
-    public String getTeamId() { // 기존: getRepoId()
-        return teamId;
-    }
 }

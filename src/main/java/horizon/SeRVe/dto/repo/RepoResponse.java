@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 @Builder
 public class RepoResponse {
-    private Long id;
+    private String Teamid;
     private String name;
     private String description;
     private String type;
@@ -24,7 +24,7 @@ public class RepoResponse {
     // 기존: TeamRepository → Team
     public static RepoResponse of(Team team, User owner) {
         return RepoResponse.builder()
-                .id(team.getId())
+                .Teamid(team.getTeamId())
                 .name(team.getName())
                 .description(team.getDescription())
                 .type(team.getType() != null ? team.getType().name() : RepoType.TEAM.name())

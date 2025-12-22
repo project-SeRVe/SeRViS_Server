@@ -64,7 +64,7 @@ class DtoEntitySecurityTest {
         Team team = new Team("Test Repo", "Desc", owner.getUserId()); // 기존: TeamRepository
 
         // 복합키 생성
-        RepositoryMemberId memberId = new RepositoryMemberId(1L, owner.getUserId());
+        RepositoryMemberId memberId = new RepositoryMemberId(team.getTeamId(), owner.getUserId());
 
         // Entity 생성 (빌더 패턴 활용)
         RepositoryMember memberEntity = RepositoryMember.builder()

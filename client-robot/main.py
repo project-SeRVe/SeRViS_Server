@@ -1,87 +1,75 @@
-import requests
+from serve_connector import ServeConnector
 import uuid
-from config import SERVER_URL, ROBOT_ID
-from security.crypto_manager import CryptoManager
+import sys
+
+# 테스트용 계정 정보
+TEST_EMAIL = "robot_01@factory.com"
+TEST_PASSWORD = "secure_password"
 
 def run_simulation():
-    print(f"🤖 [Python AGV: {ROBOT_ID}] 시뮬레이션 시작...")
+    print(">>> [Physical AI Client] 시뮬레이션 시작")
     
-    crypto = CryptoManager()
-    session = requests.Session()
+    # 1. 커넥터 초기화
+    connector = ServeConnector()
+    print(f"[Init] 서버 URL: {connector._get_server_url()}")
 
-    # ---------------------------------------------------
-    # Step 0. 저장소 생성 (매번 새로운 이름으로 충돌 방지)
-    # ---------------------------------------------------
-    print("\n--- Step 0. 저장소 생성 ---")
-    unique_name = f"Python-Repo-{str(uuid.uuid4())[:8]}"
+    # ------------------------------------------------------------------
+    # Step 1. 보안 핸드셰이크 (가장 먼저 수행)
+    # ------------------------------------------------------------------
+    print("\n>>> [Step 1] 보안 핸드셰이크 시도...")
+    # 서버의 SecurityConfig에서 /api/security/** 가 permitAll()이어야 함
+    success, msg = connector.perform_handshake()
     
-    resp = session.post(f"{SERVER_URL}/repositories", json={
-        "name": unique_name,
-        "description": "파이썬 클라이언트 자동 생성",
-        "ownerId": ROBOT_ID
-    })
-    
-    if resp.status_code != 200:
-        print(f"❌ 저장소 생성 실패: {resp.text}")
-        return
+    if not success:
+        print(f"[FATAL] 핸드셰이크 실패: {msg}")
+        sys.exit(1)
         
-    repo_id = resp.json()
-    print(f"✅ 저장소 생성 완료! ID: {repo_id}")
+    print(f"[Success] {msg}")
 
-    # ---------------------------------------------------
-    # Step 1. 키 교환 (Handshake)
-    # ---------------------------------------------------
-    print("\n--- Step 1. 보안 핸드셰이크 ---")
-    my_key_pair = crypto.generate_client_key_pair()
-    public_key_json = crypto.get_public_key_json(my_key_pair)
+    # ------------------------------------------------------------------
+    # Step 2. 로그인 (인증)
+    # ------------------------------------------------------------------
+    print("\n>>> [Step 2] 로그인 시도...")
+    
+    login_success, login_msg = connector.login(TEST_EMAIL, TEST_PASSWORD)
+    
+    if not login_success:
+        print(f"[Info] 로그인 실패 ({login_msg}). 회원가입을 시도합니다.")
+        # 데모용 임시 키 생성
+        demo_key_pair = connector.crypto.generate_client_key_pair()
+        pub_key = connector.crypto.get_public_key_json(demo_key_pair)
+        enc_priv_key = "encrypted_private_key_demo"
+        
+        sign_success, sign_msg = connector.signup(TEST_EMAIL, TEST_PASSWORD, pub_key, enc_priv_key)
+        if not sign_success:
+            print(f"[FATAL] 회원가입 실패: {sign_msg}")
+            sys.exit(1)
+            
+        login_success, login_msg = connector.login(TEST_EMAIL, TEST_PASSWORD)
 
-    resp = session.post(f"{SERVER_URL}/security/handshake", json={
-        "publicKeyJson": public_key_json
-    })
+    print(f"[Success] 로그인 완료 (Token 획득)")
 
-    if resp.status_code != 200:
-        print(f"❌ 핸드셰이크 실패: {resp.text}")
+    # ------------------------------------------------------------------
+    # Step 3. 업무 수행 (저장소 생성 및 보안 업로드)
+    # ------------------------------------------------------------------
+    print("\n>>> [Step 3] 저장소 생성 및 데이터 업로드...")
+    
+    repo_name = f"AGV-Log-{str(uuid.uuid4())[:8]}"
+    repo_id, repo_msg = connector.create_repository(repo_name, "AGV Log Data", "demo_team_key")
+    
+    if not repo_id:
+        print(f"[Error] 저장소 생성 실패: {repo_msg}")
         return
 
-    # 서버 응답에서 AES 키 복구
-    encrypted_aes_key = resp.json()['encryptedAesKey']
-    aes_handle = crypto.unwrap_aes_key(encrypted_aes_key, my_key_pair)
-    print("✅ AES 키 수신 및 복구 성공!")
+    print(f"[Success] 저장소 생성됨 (ID: {repo_id})")
 
-    # ---------------------------------------------------
-    # Step 2. 데이터 암호화 및 업로드
-    # ---------------------------------------------------
-    print("\n--- Step 2. 데이터 암호화 업로드 ---")
-    original_data = "Target Coordinates: [37.5665, 126.9780]"
-    encrypted_content = crypto.encrypt_data(original_data, aes_handle)
-
-    print(f"원본: {original_data}")
-    print(f"암호문: {encrypted_content[:30]}...")
-
-    resp = session.post(f"{SERVER_URL}/documents", json={
-        "content": encrypted_content,
-        "repositoryId": repo_id
-    })
-    print(f"🎉 업로드 결과: {resp.text}")
-
-    # ID 추출 (숫자만)
-    doc_id = ''.join(filter(str.isdigit, resp.text))
-
-    # ---------------------------------------------------
-    # Step 3. 다운로드 및 검증
-    # ---------------------------------------------------
-    print("\n--- Step 3. 다운로드 및 복호화 검증 ---")
-    resp = session.get(f"{SERVER_URL}/documents/{doc_id}")
+    sensor_data = "Sensor: Lidar_01, Status: OK, Loc: [10, 20]"
+    doc_id, up_msg = connector.upload_secure_document(sensor_data, repo_id)
     
-    downloaded_content = resp.json()['content']
-    decrypted_data = crypto.decrypt_data(downloaded_content, aes_handle)
-    
-    print(f"🔓 복호화된 데이터: {decrypted_data}")
-
-    if original_data == decrypted_data:
-        print("\n✨ [SUCCESS] 완벽하게 일치합니다! ✨")
+    if doc_id:
+        print(f"[Success] 암호화 업로드 완료 (Doc ID: {doc_id})")
     else:
-        print("\n❌ [FAILED] 데이터가 다릅니다!")
+        print(f"[Error] 업로드 실패: {up_msg}")
 
 if __name__ == "__main__":
     run_simulation()

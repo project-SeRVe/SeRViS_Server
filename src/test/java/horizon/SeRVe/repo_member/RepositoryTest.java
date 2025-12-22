@@ -65,7 +65,7 @@ class RepositoryTest {
         entityManager.persist(team);
 
         // 3. [테스트] RepositoryMember 생성 및 저장
-        RepositoryMemberId memberId = new RepositoryMemberId(team.getId(), user.getUserId());
+        RepositoryMemberId memberId = new RepositoryMemberId(team.getTeamId(), user.getUserId());
 
         RepositoryMember member = RepositoryMember.builder()
                 .id(memberId)

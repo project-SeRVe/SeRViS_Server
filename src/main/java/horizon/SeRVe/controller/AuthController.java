@@ -40,4 +40,10 @@ public class AuthController {
         authService.withdraw(user.getUserId());
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/public-key")
+    public ResponseEntity<String> getPublicKey(@RequestParam String email) {
+        String publicKey = authService.getPublicKey(email);
+        return ResponseEntity.ok(publicKey);
+    }
 }
