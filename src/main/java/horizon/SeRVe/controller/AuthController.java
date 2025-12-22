@@ -46,4 +46,11 @@ public class AuthController {
         String publicKey = authService.getPublicKey(email);
         return ResponseEntity.ok(publicKey);
     }
+
+    // 로봇 로그인 엔드포인트
+    @PostMapping("/robot/login")
+    public ResponseEntity<LoginResponse> robotLogin(@RequestBody @Valid horizon.SeRVe.dto.auth.RobotLoginRequest request) {
+        LoginResponse response = authService.robotLogin(request);
+        return ResponseEntity.ok(response);
+    }
 }

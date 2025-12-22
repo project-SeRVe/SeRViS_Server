@@ -19,6 +19,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final horizon.SeRVe.repository.EdgeNodeRepository edgeNodeRepository;
 
     // 1. 회원가입
     @Transactional
@@ -80,5 +81,23 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
         return user.getPublicKey();
+    }
+    public LoginResponse robotLogin(horizon.SeRVe.dto.auth.RobotLoginRequest req) {
+        horizon.SeRVe.entity.EdgeNode robot = edgeNodeRepository.findBySerialNumber(req.getSerialNumber())
+                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 기기입니다."));
+
+        if (!passwordEncoder.matches(req.getApiToken(), robot.getHashedToken())) {
+            throw new IllegalArgumentException("API 토큰이 유효하지 않습니다.");
+        }
+
+        // 로봇용 토큰 발급 (userId 자리에 nodeId, email 자리에 serialNumber 사용)
+        String accessToken = jwtTokenProvider.createToken(robot.getNodeId(), robot.getSerialNumber());
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .userId(robot.getNodeId())
+                .email(robot.getSerialNumber()) // 이메일 필드에 시리얼 번호 담음
+                .encryptedPrivateKey("") // 로봇은 개인키를 서버에 백업하지 않음 (로컬 TPM 관리 가정)
+                .build();
     }
 }

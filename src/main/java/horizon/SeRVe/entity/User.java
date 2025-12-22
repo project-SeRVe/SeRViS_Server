@@ -35,6 +35,7 @@ public class User implements UserDetails {
     @Column(name = "encrypted_private_key", columnDefinition = "TEXT", nullable = false)
     private String encryptedPrivateKey;
 
+
     // --- 비즈니스 로직 ---
     public void updatePassword(String newHashedPassword, String newEncryptedPrivateKey) {
         this.hashedPassword = newHashedPassword;

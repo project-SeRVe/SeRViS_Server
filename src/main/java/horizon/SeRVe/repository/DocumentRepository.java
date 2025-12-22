@@ -17,4 +17,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findAllByTeam(Team team); // 기존: findAllByTeamRepository
 
     Optional<Document> findByDocumentId(String documentId);
+
+    // 같은 이름이면 버전을 올리고 없으면 새로 만드는 로직
+    Optional<Document> findByTeamAndOriginalFileName(Team team, String originalFileName);
 }

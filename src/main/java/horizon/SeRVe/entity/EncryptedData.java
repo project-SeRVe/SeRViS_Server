@@ -22,6 +22,11 @@ public class EncryptedData {
     @Column(nullable = false, columnDefinition = "LONGBLOB")
     private byte[] encryptedBlob; // 실제 암호화 데이터 (바이너리)
 
+    @Version
     @Column(nullable = false)
     private int version;
+
+    public void updateContent(byte[] newBlob) {
+        this.encryptedBlob = newBlob;
+    }
 }
