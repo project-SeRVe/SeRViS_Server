@@ -10,5 +10,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ChunkUploadRequest {
+    private String fileName; // 파일 이름 (예: "설비매뉴얼.pdf")
     private List<ChunkUploadItem> chunks; // 배치 업로드
 }
