@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class DocumentResponse {
-    private String docId;
+    private Long id;
     private String fileName;
     private String fileType;
     private String uploaderId;
@@ -17,7 +17,7 @@ public class DocumentResponse {
 
     public static DocumentResponse from(Document document) {
         return DocumentResponse.builder()
-                .docId(document.getDocumentId())
+                .id(document.getId())
                 .fileName(document.getOriginalFileName())
                 .fileType(document.getFileType())
                 .uploaderId(document.getUploaderId())

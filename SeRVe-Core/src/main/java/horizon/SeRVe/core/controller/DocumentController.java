@@ -1,5 +1,6 @@
 package horizon.SeRVe.core.controller;
 
+import horizon.SeRVe.core.dto.document.ClientUploadRequest;
 import horizon.SeRVe.core.dto.document.DocumentResponse;
 import horizon.SeRVe.core.dto.document.EncryptedDataResponse;
 import horizon.SeRVe.core.dto.document.UploadDocumentRequest;
@@ -17,6 +18,7 @@ public class DocumentController {
 
     private final DocumentService documentService;
 
+    // 기존 업로드 (내부 API용)
     @PostMapping("/api/teams/{teamId}/documents")
     public ResponseEntity<Void> uploadDocument(
             @PathVariable String teamId,
@@ -26,6 +28,18 @@ public class DocumentController {
         String userId = (String) authentication.getPrincipal();
         documentService.uploadDocument(teamId, userId, request);
         return ResponseEntity.ok().build();
+    }
+
+    // 클라이언트 호환 업로드 (POST /api/documents)
+    @PostMapping("/api/documents")
+    public ResponseEntity<Long> uploadDocumentFromClient(
+            Authentication authentication,
+            @RequestBody ClientUploadRequest request) {
+
+        String userId = (String) authentication.getPrincipal();
+        Long docId = documentService.uploadDocumentFromClient(
+                request.getRepositoryId(), userId, request.getContent());
+        return ResponseEntity.ok(docId);
     }
 
     @GetMapping("/api/teams/{teamId}/documents")
@@ -38,13 +52,14 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/api/documents/{docId}/data")
+    // 다운로드 (Long id 기반 - 클라이언트 호환)
+    @GetMapping("/api/documents/{id}/data")
     public ResponseEntity<EncryptedDataResponse> downloadData(
-            @PathVariable String docId,
+            @PathVariable Long id,
             Authentication authentication) {
 
         String userId = (String) authentication.getPrincipal();
-        EncryptedDataResponse response = documentService.getData(docId, userId);
+        EncryptedDataResponse response = documentService.getDataById(id, userId);
         return ResponseEntity.ok(response);
     }
 

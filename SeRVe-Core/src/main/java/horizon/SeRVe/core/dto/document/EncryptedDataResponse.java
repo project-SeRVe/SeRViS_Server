@@ -7,14 +7,14 @@ import lombok.Getter;
 @Getter
 @Builder
 public class EncryptedDataResponse {
-    private String docId;
-    private byte[] encryptedBlob;
+    private Long id;
+    private byte[] content;
     private int version;
 
     public static EncryptedDataResponse from(EncryptedData data) {
         return EncryptedDataResponse.builder()
-                .docId(data.getDocument().getDocumentId())
-                .encryptedBlob(data.getEncryptedBlob())
+                .id(data.getDocument().getId())
+                .content(data.getEncryptedBlob())
                 .version(data.getVersion())
                 .build();
     }

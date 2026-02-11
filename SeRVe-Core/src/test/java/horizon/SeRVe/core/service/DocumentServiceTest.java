@@ -113,7 +113,7 @@ class DocumentServiceTest {
 
         // then
         assertNotNull(response);
-        assertArrayEquals("secret".getBytes(), response.getEncryptedBlob());
+        assertArrayEquals("secret".getBytes(), response.getContent());
     }
 
     @Test

@@ -92,19 +92,76 @@ public class DocumentService {
                 .collect(Collectors.toList());
     }
 
-    // 데이터 다운로드
+    // 클라이언트 호환 업로드 (POST /api/documents)
+    @Transactional
+    public Long uploadDocumentFromClient(String repositoryId, String userId, String content) {
+        // 1. 팀 존재 확인
+        if (!teamServiceClient.teamExists(repositoryId)) {
+            throw new IllegalArgumentException("저장소를 찾을 수 없습니다.");
+        }
+
+        // 2. 멤버십 검증
+        teamServiceClient.getMemberRole(repositoryId, userId);
+
+        // 3. 암호화된 콘텐츠를 바이너리로 변환
+        byte[] blobData = Base64.getDecoder().decode(content);
+
+        // 4. 문서 생성
+        Document document = Document.builder()
+                .documentId(UUID.randomUUID().toString())
+                .teamId(repositoryId)
+                .uploaderId(userId)
+                .originalFileName("uploaded_document")
+                .fileType("encrypted")
+                .build();
+
+        EncryptedData encryptedData = EncryptedData.builder()
+                .dataId(UUID.randomUUID().toString())
+                .document(document)
+                .encryptedBlob(blobData)
+                .build();
+
+        document.setEncryptedData(encryptedData);
+        Document saved = documentRepository.save(document);
+
+        return saved.getId();
+    }
+
+    // 데이터 다운로드 (Long id 기반 - 클라이언트 호환)
+    @Transactional(readOnly = true)
+    public EncryptedDataResponse getDataById(Long id, String requesterId) {
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
+
+        checkDocumentPermission(document, requesterId);
+
+        EncryptedData data = encryptedDataRepository.findByDocument(document)
+                .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
+
+        return EncryptedDataResponse.from(data);
+    }
+
+    // 데이터 다운로드 (UUID 기반 - 내부 API용)
     @Transactional(readOnly = true)
     public EncryptedDataResponse getData(String docId, String requesterId) {
         Document document = documentRepository.findByDocumentId(docId)
                 .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
 
-        // [권한 체크 로직]
+        checkDocumentPermission(document, requesterId);
+
+        EncryptedData data = encryptedDataRepository.findByDocument(document)
+                .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
+
+        return EncryptedDataResponse.from(data);
+    }
+
+    // 문서 접근 권한 체크 (User 또는 EdgeNode)
+    private void checkDocumentPermission(Document document, String requesterId) {
         boolean hasPermission = false;
 
         // 1. 사람(User)인지 확인
         try {
             if (authServiceClient.userExists(requesterId)) {
-                // 멤버십 체크
                 hasPermission = teamServiceClient.memberExists(document.getTeamId(), requesterId);
             }
         } catch (Exception e) {
@@ -124,11 +181,6 @@ public class DocumentService {
         if (!hasPermission) {
             throw new SecurityException("접근 권한이 없습니다 (멤버 아님).");
         }
-
-        EncryptedData data = encryptedDataRepository.findByDocument(document)
-                .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
-
-        return EncryptedDataResponse.from(data);
     }
 
     // 문서 삭제
