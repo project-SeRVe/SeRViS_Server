@@ -19,9 +19,8 @@ public class RepositoryMember {
     @JoinColumn(name = "team_id")
     private Team team;
 
-    // User JPA 참조 제거 (Auth DB에 있으므로 Feign으로 조회)
-    // userId는 EmbeddedId(RepositoryMemberId.userId)를 통해 DB에 매핑됨
-    @Column(name = "user_id", insertable = false, updatable = false)
+    // name 생략 → 논리 이름이 EmbeddedId의 userId와 동일하게 유지되어 충돌 없음
+    @Column(insertable = false, updatable = false)
     private String userId;
 
     @Enumerated(EnumType.STRING)

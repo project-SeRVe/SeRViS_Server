@@ -39,7 +39,9 @@ public class User implements UserDetails {
     // --- 비즈니스 로직 ---
     public void updatePassword(String newHashedPassword, String newEncryptedPrivateKey) {
         this.hashedPassword = newHashedPassword;
-        this.encryptedPrivateKey = newEncryptedPrivateKey;
+        if (newEncryptedPrivateKey != null && !newEncryptedPrivateKey.isBlank()) {
+            this.encryptedPrivateKey = newEncryptedPrivateKey;
+        }
     }
 
     // --- UserDetails 구현 ---

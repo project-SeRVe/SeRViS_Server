@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/security/**").permitAll()
                         .requestMatchers("/api/sync/documents").permitAll()
                         .requestMatchers("/internal/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
