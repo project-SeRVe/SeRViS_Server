@@ -46,7 +46,7 @@ SeRViS_server/
 ├── SeRVe-Common/    # 공통 모듈 (JWT, 암호화, 예외처리, 공유 DTO)
 ├── SeRVe-Auth/      # 인증 서비스 (:8081)
 ├── SeRVe-Team/      # 팀/멤버 관리 서비스 (:8082)
-├── SeRVe-Core/      # 문서/청크/동기화 서비스 (:8083)
+├── SeRVe-Core/      # 태스크/데모/동기화 서비스 (:8083)
 ├── gateway/         # Nginx API Gateway 설정
 └── docker-compose.yml
 ```
@@ -76,12 +76,12 @@ SeRViS_server/
 - DB: `serve_team_db` (테이블: `teams`, `repository_members`, `edge_nodes`)
 
 ### SeRVe-Core (:8083)
-문서 저장, 벡터 청크, 데이터 동기화
-- 문서 업로드/다운로드 (E2E 암호화)
-- 벡터 청크 관리
+태스크 저장, 벡터 데모, 데이터 동기화
+- 태스크 업로드/다운로드 (E2E 암호화)
+- 벡터 데모 관리
 - 데이터 동기화 (Sync)
 - 보안 키 교환 (Handshake)
-- DB: `serve_core_db` (테이블: `documents`, `encrypted_data`, `vector_chunks`)
+- DB: `serve_core_db` (테이블: `tasks`, `encrypted_data`, `vector_demos`)
 
 ## 빌드 및 실행
 
@@ -137,10 +137,10 @@ Nginx가 `localhost:8080`에서 URL 패턴별로 각 서비스에 라우팅합�
 | `/api/repositories` | Team (:8082) | 저장소 CRUD |
 | `/api/teams/{id}/members/**` | Team (:8082) | 멤버 관리 |
 | `/edge-nodes/**` | Team (:8082) | 엣지노드 관리 |
-| `/api/documents` | Core (:8083) | 문서 업로드 |
-| `/api/documents/{id}` | Core (:8083) | 문서 다운로드 |
-| `/api/teams/{id}/documents` | Core (:8083) | 팀별 문서 관리 |
-| `/api/teams/{id}/chunks` | Core (:8083) | 벡터 청크 |
+| `/api/tasks` | Core (:8083) | 태스크 업로드 |
+| `/api/tasks/{id}` | Core (:8083) | 태스크 다운로드 |
+| `/api/teams/{id}/tasks` | Core (:8083) | 팀별 태스크 관리 |
+| `/api/teams/{id}/demos` | Core (:8083) | 벡터 데모 |
 | `/api/security/**` | Core (:8083) | 키 교환 |
 | `/api/sync/**` | Core (:8083) | 데이터 동기화 |
 

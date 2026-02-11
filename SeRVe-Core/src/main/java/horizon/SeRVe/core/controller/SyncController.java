@@ -1,6 +1,6 @@
 package horizon.SeRVe.core.controller;
 
-import horizon.SeRVe.core.dto.sync.ChangedDocumentResponse;
+import horizon.SeRVe.core.dto.sync.ChangedTaskResponse;
 import horizon.SeRVe.core.service.SyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +15,14 @@ public class SyncController {
 
     private final SyncService syncService;
 
-    @GetMapping("/documents")
-    public ResponseEntity<List<ChangedDocumentResponse>> getChangedDocuments(
+    @GetMapping("/tasks")
+    public ResponseEntity<List<ChangedTaskResponse>> getChangedTasks(
             @RequestParam String teamId,
             @RequestParam(defaultValue = "0") int lastSyncVersion) {
 
-        List<ChangedDocumentResponse> changedDocuments =
-                syncService.getChangedDocuments(teamId, lastSyncVersion);
+        List<ChangedTaskResponse> changedTasks =
+                syncService.getChangedTasks(teamId, lastSyncVersion);
 
-        return ResponseEntity.ok(changedDocuments);
+        return ResponseEntity.ok(changedTasks);
     }
 }

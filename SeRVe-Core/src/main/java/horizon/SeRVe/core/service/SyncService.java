@@ -1,9 +1,9 @@
 package horizon.SeRVe.core.service;
 
-import horizon.SeRVe.core.dto.sync.ChangedDocumentResponse;
-import horizon.SeRVe.core.entity.Document;
+import horizon.SeRVe.core.dto.sync.ChangedTaskResponse;
+import horizon.SeRVe.core.entity.Task;
 import horizon.SeRVe.core.feign.TeamServiceClient;
-import horizon.SeRVe.core.repository.DocumentRepository;
+import horizon.SeRVe.core.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,23 +15,23 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SyncService {
 
-    private final DocumentRepository documentRepository;
+    private final TaskRepository taskRepository;
     private final TeamServiceClient teamServiceClient;
 
     @Transactional(readOnly = true)
-    public List<ChangedDocumentResponse> getChangedDocuments(String teamId, int lastSyncVersion) {
+    public List<ChangedTaskResponse> getChangedTasks(String teamId, int lastSyncVersion) {
         if (!teamServiceClient.teamExists(teamId)) {
             throw new IllegalArgumentException("존재하지 않는 팀입니다.");
         }
 
-        // 팀의 모든 문서 조회
-        List<Document> allDocuments = documentRepository.findAllByTeamId(teamId);
+        // 팀의 모든 태스크 조회
+        List<Task> allTasks = taskRepository.findAllByTeamId(teamId);
 
         // 버전 필터링 (version > lastSyncVersion)
-        return allDocuments.stream()
-                .filter(doc -> doc.getEncryptedData() != null &&
-                        doc.getEncryptedData().getVersion() > lastSyncVersion)
-                .map(ChangedDocumentResponse::from)
+        return allTasks.stream()
+                .filter(task -> task.getEncryptedData() != null &&
+                        task.getEncryptedData().getVersion() > lastSyncVersion)
+                .map(ChangedTaskResponse::from)
                 .collect(Collectors.toList());
     }
 }

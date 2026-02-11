@@ -225,7 +225,7 @@ InternalTeamController (/internal/**)
  ---
 Phase 4: SeRVe-Core 모듈
 
-독립 Spring Boot 앱. 포트: 8083. DB: serve_core_db (documents, encrypted_data, vector_chunks)
+독립 Spring Boot 앱. 포트: 8083. DB: serve_core_db (tasks, encrypted_data, vector_demos)
 
 4.1 SeRVe-Core/build.gradle
 
@@ -238,7 +238,7 @@ Phase 4: SeRVe-Core 모듈
 
 4.3 엔티티 변경 (핵심)
 
-Document.java — Team/User JPA 참조를 String ID로 교체:
+Task.java — Team/User JPA 참조를 String ID로 교체:
 // 삭제: @ManyToOne Team team; @ManyToOne User uploader;
 // 추가:
 @Column(name = "team_id")
@@ -246,28 +246,28 @@ private String teamId;
 @Column(name = "uploader_id")
 private String uploaderId;
 
-EncryptedData, VectorChunk — 패키지 변경만 (이미 String ID 사용)
+EncryptedData, VectorDemo — 패키지 변경만 (이미 String ID 사용)
 
 4.4 Repository 변경
 
-DocumentRepository 쿼리 변경:
+TaskRepository 쿼리 변경:
 - findAllByTeam(Team) → findAllByTeamId(String)
 - findByTeamAndOriginalFileName(Team, String) → findByTeamIdAndOriginalFileName(String, String)
 
-EncryptedDataRepository, VectorChunkRepository — 패키지 변경만
+EncryptedDataRepository, VectorDemoRepository — 패키지 변경만
 
 4.5 서비스 변경 (가장 큰 변경)
 
-DocumentService — TeamRepository, UserRepository, MemberRepository, EdgeNodeRepository 모두 제거. Feign으로 교체:
+TaskService — TeamRepository, UserRepository, MemberRepository, EdgeNodeRepository 모두 제거. Feign으로 교체:
 - 팀 존재 확인: teamServiceClient.teamExists(teamId)
 - 멤버십/권한 확인: teamServiceClient.getMemberRole(teamId, userId)
 - 멤버십 존재 확인: teamServiceClient.memberExists(teamId, userId)
 - EdgeNode 팀 확인: teamServiceClient.getEdgeNodeTeamId(nodeId)
-- Document 생성 시: .teamId(teamId), .uploaderId(userId) (String)
+- Task 생성 시: .teamId(teamId), .uploaderId(userId) (String)
 
-ChunkService — 동일 패턴으로 Feign 교체
+DemoService — 동일 패턴으로 Feign 교체
 
-SyncService — teamServiceClient.teamExists(teamId) + documentRepository.findAllByTeamId(teamId)
+SyncService — teamServiceClient.teamExists(teamId) + taskRepository.findAllByTeamId(teamId)
 
 4.6 컨트롤러 변경
 
@@ -276,8 +276,8 @@ SyncService — teamServiceClient.teamExists(teamId) + documentRepository.findAl
 
 4.7 DTO 변경
 
-- DocumentResponse.from(): document.getUploader().getUserId() → document.getUploaderId()
-- ChangedDocumentResponse.from(): 동일 패턴
+- TaskResponse.from(): task.getUploader().getUserId() → task.getUploaderId()
+- ChangedTaskResponse.from(): 동일 패턴
 
 4.8 Feign Clients 생성
 
@@ -318,7 +318,7 @@ Phase 5: 인프라 및 정리
 - CryptoTest → SeRVe-Common
 - AuthServiceTest, AuthControllerTest → SeRVe-Auth
 - RepoServiceTest, MemberServiceTest → SeRVe-Team
-- DocumentServiceTest, ChunkServiceTest → SeRVe-Core
+- TaskServiceTest, DemoServiceTest → SeRVe-Core
 
  ---
 실행 순서 요약
@@ -342,7 +342,7 @@ Phase 5: 인프라 및 정리
 ├──────────────────────────────────────────────┼────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
 │ RepositoryMember에서 User JPA 참조 제거         │ MemberRepository 쿼리 14+ 호출 지점 변경                    │ findByTeamAndUserId(Team, String) 패턴으로 일괄 교체                    │
 ├──────────────────────────────────────────────┼────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
-│ Document에서 Team/User JPA 참조 제거             │ DocumentRepository 쿼리 6+ 호출 지점 변경                  │ findByTeamIdAndOriginalFileName(String, String) 패턴으로 교체          │
+│ Task에서 Team/User JPA 참조 제거                  │ TaskRepository 쿼리 6+ 호출 지점 변경                      │ findByTeamIdAndOriginalFileName(String, String) 패턴으로 교체          │
 ├──────────────────────────────────────────────┼────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────┤
 │ Feign 호출 실패 (네트워크 오류)                    │ 서비스 간 통신 실패                                        │ 1차: fail-fast, 2차(추후): Resilience4j 서킷브레이커                     │
 └──────────────────────────────────────────────┴────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────┘

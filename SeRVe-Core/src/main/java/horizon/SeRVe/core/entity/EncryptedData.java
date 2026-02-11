@@ -15,8 +15,8 @@ public class EncryptedData {
     private String dataId; // UUID
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "document_id")
-    private Document document;
+    @JoinColumn(name = "task_id")
+    private Task task;
 
     @Lob
     @Column(nullable = false, columnDefinition = "LONGBLOB")
