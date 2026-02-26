@@ -23,6 +23,9 @@ dependencies {
     // OpenFeign (Team, Auth 서비스 호출용)
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
+    // Actuator (Health Check)
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     // Security 테스트
     testImplementation 'org.springframework.security:spring-security-test'
 }

@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/security/**").permitAll()
                         .requestMatchers("/api/sync/tasks").permitAll()
                         .requestMatchers("/internal/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
