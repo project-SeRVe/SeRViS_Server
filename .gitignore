@@ -31,6 +31,7 @@ env.properties
 # Sensitive files
 secrets/
 *.keystore
+k8s-manifests/secrets.yaml
 
 # Others
 node_modules/

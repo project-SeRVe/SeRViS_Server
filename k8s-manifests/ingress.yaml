@@ -1,0 +1,100 @@
+# AWS Load Balancer Controller를 통해 ALB를 자동 프로비저닝합니다.
+# 설치 전제: helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system
+#
+# 모든 경로를 ImplementationSpecific으로 통일하여 ALB 우선순위 평가를 일관되게 유지합니다.
+# 라우팅 우선순위 (위에서 아래 순서로 평가):
+#   1. /api/teams/*/tasks*   → Core  (구체적인 경로 먼저)
+#   2. /api/teams/*/demos*   → Core
+#   3. /api/teams/*/members* → Team
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: serve-ingress
+  namespace: serve
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/group.name: serve-alb
+    alb.ingress.kubernetes.io/subnets: "subnet-0311178d265026d1f,subnet-0bdce469069534a4e"
+spec:
+  rules:
+    - http:
+        paths:
+          # ===== Auth Service =====
+          - path: /auth*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-auth-svc
+                port:
+                  number: 8081
+
+          # ===== Core Service (Team prefix 하위 구체 경로 — Team보다 먼저 위치) =====
+          - path: /api/teams/*/tasks*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-core-svc
+                port:
+                  number: 8083
+
+          - path: /api/teams/*/demos*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-core-svc
+                port:
+                  number: 8083
+
+          # ===== Team Service =====
+          - path: /api/teams/*/members*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-team-svc
+                port:
+                  number: 8082
+
+          - path: /api/repositories*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-team-svc
+                port:
+                  number: 8082
+
+          - path: /edge-nodes*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-team-svc
+                port:
+                  number: 8082
+
+          # ===== Core Service (그 외 경로) =====
+          - path: /api/tasks*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-core-svc
+                port:
+                  number: 8083
+
+          - path: /api/security*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-core-svc
+                port:
+                  number: 8083
+
+          - path: /api/sync*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: serve-core-svc
+                port:
+                  number: 8083

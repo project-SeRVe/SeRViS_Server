@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: serve-team-svc
+  namespace: serve
+spec:
+  selector:
+    app: serve-team
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: ClusterIP

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: serve-core-svc
+  namespace: serve
+spec:
+  selector:
+    app: serve-core
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: ClusterIP
