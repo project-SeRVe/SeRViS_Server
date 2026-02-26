@@ -1,0 +1,7 @@
+.git
+.gradle
+**/build/
+!**/build/libs/*.jar
+client-robot/
+mariadb_data/
+*.md
