@@ -4,9 +4,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mariadb://localhost:3306/serve_team_db?allowPublicKeyRetrieval=true&useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
-    username: serve_user
-    password: serve_pass
+    url: ${SPRING_DATASOURCE_URL:jdbc:mariadb://localhost:3306/serve_team_db?allowPublicKeyRetrieval=true&useSSL=true&trustServerCertificate=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul}
+    username: ${SPRING_DATASOURCE_USERNAME:serve_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:serve_pass}
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
@@ -24,9 +24,18 @@ logging:
     console: UTF-8
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: 86400000
 
 service:
   auth:
     url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
