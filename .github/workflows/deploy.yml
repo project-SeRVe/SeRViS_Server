@@ -100,7 +100,7 @@ jobs:
       - name: Build and Push Auth
         # if: needs.detect-changes.outputs.auth == 'true'
         run: |
-          cd SeRVe_auth && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          cd SeRVe_Auth && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
           docker buildx build --platform linux/amd64 \
             -f Dockerfile.auth \
             -t ${{ steps.ssm.outputs.ecr_registry }}/serve-auth:${{ github.sha }} \
@@ -111,7 +111,7 @@ jobs:
       - name: Build and Push Team
         # if: needs.detect-changes.outputs.team == 'true'
         run: |
-          cd SeRVe_team && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          cd SeRVe_Team && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
           docker buildx build --platform linux/amd64 \
             -f Dockerfile.team \
             -t ${{ steps.ssm.outputs.ecr_registry }}/serve-team:${{ github.sha }} \
@@ -122,7 +122,7 @@ jobs:
       - name: Build and Push Core
         # if: needs.detect-changes.outputs.core == 'true'
         run: |
-          cd SeRVe_core && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          cd SeRVe_Core && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
           docker buildx build --platform linux/amd64 \
             -f Dockerfile.core \
             -t ${{ steps.ssm.outputs.ecr_registry }}/serve-core:${{ github.sha }} \
