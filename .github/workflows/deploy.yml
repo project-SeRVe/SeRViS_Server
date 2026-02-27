@@ -96,11 +96,14 @@ jobs:
           ECR_REGISTRY=$(aws ssm get-parameter --name /servis/ecr-registry --query 'Parameter.Value' --output text)
           echo "ecr_registry=${ECR_REGISTRY}" >> $GITHUB_OUTPUT
 
+      #
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
       # Auth
       - name: Build and Push Auth
-        # if: needs.detect-changes.outputs.auth == 'true'
         run: |
-          cd SeRVe-Auth && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          ./gradlew :SeRVe-Auth:bootJar -x test
           docker buildx build --platform linux/amd64 \
             -f Dockerfile.auth \
             -t ${{ steps.ssm.outputs.ecr_registry }}/serve-auth:${{ github.sha }} \
@@ -109,9 +112,8 @@ jobs:
 
       # Team
       - name: Build and Push Team
-        # if: needs.detect-changes.outputs.team == 'true'
         run: |
-          cd SeRVe-Team && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          ./gradlew :SeRVe-Team:bootJar -x test
           docker buildx build --platform linux/amd64 \
             -f Dockerfile.team \
             -t ${{ steps.ssm.outputs.ecr_registry }}/serve-team:${{ github.sha }} \
@@ -120,9 +122,8 @@ jobs:
 
       # Core
       - name: Build and Push Core
-        # if: needs.detect-changes.outputs.core == 'true'
         run: |
-          cd SeRVe-Core && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          ./gradlew :SeRVe-Core:bootJar -x test
           docker buildx build --platform linux/amd64 \
             -f Dockerfile.core \
             -t ${{ steps.ssm.outputs.ecr_registry }}/serve-core:${{ github.sha }} \
