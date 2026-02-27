@@ -162,6 +162,8 @@ jobs:
       - name: Prepare manifests
         run: |
           # secrets.yaml
+          cp k8s-manifests/secrets.yaml.template k8s-manifests/secrets.yaml
+          
           sed -i 's|<RDS_HOST>|${{ steps.config.outputs.rds_host }}|g' k8s-manifests/secrets.yaml
           sed -i 's|DB_PASSWORD:.*|DB_PASSWORD: "${{ secrets.DB_APP_PASSWORD }}"|g' k8s-manifests/secrets.yaml
           sed -i 's|JWT_SECRET:.*|JWT_SECRET: "${{ secrets.JWT_SECRET }}"|g' k8s-manifests/secrets.yaml
