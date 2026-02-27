@@ -1,3 +1,36 @@
+
+resource "aws_ssm_parameter" "rds_host" {
+  name      = "/servis/rds-host"
+  type      = "String"
+  value     = aws_db_instance.this.address
+  overwrite = true
+  tags      = { Name = "${var.project_name}-rds-host" }
+}
+
+resource "aws_ssm_parameter" "public_subnets" {
+  name      = "/servis/public-subnets"
+  type      = "String"
+  value     = join(",", aws_subnet.public[*].id)
+  overwrite = true
+  tags      = { Name = "${var.project_name}-public-subnets" }
+}
+
+resource "aws_ssm_parameter" "ecr_registry" {
+  name      = "/servis/ecr-registry"
+  type      = "String"
+  value     = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+  overwrite = true
+  tags      = { Name = "${var.project_name}-ecr-registry" }
+}
+
+resource "aws_ssm_parameter" "cluster_name" {
+  name      = "/servis/cluster-name"
+  type      = "String"
+  value     = var.cluster_name
+  overwrite = true
+  tags      = { Name = "${var.project_name}-cluster-name" }
+}
+
 # ============================================================
 # Outputs
 # ============================================================
