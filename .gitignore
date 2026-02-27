@@ -48,3 +48,19 @@ mariadb_data
 CLAUDE.md
 README_Client.md
 MSA_PLAN.md
+BLOG_MSA_MIGRATION.md
+EKS_DEPLOY_PLAN.md
+infra_architecture.md
+REPORT.md
+
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+# 민감 정보
+terraform.tfvars
+*.auto.tfvars
