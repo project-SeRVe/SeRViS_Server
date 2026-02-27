@@ -27,8 +27,7 @@ spec:
                   name: serve-secrets
                   key: DB_HOST
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mariadb://$(DB_HOST):3306/serve_core_db?allowPublicKeyRetrieval=true&useSSL=true&trustServerCertificate=true
-&characterEncoding=UTF-8&serverTimezone=Asia/Seoul"
+              value: "jdbc:mariadb://$(DB_HOST):3306/serve_core_db?allowPublicKeyRetrieval=true&sslMode=trust&characterEncoding=UTF-8&serverTimezone=Asia/Seoul"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
