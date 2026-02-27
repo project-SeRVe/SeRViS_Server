@@ -18,7 +18,7 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
     alb.ingress.kubernetes.io/group.name: serve-alb
-    alb.ingress.kubernetes.io/subnets: "subnet-00a0aaadbf19c2b51,subnet-0bac3ed2a0c01a978"
+    alb.ingress.kubernetes.io/subnets: "<PUBLIC_SUBNETS>"
 spec:
   rules:
     - http:

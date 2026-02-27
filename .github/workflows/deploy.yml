@@ -25,6 +25,7 @@ on:
       - '*.md'
       - 'terraform/**'
       - '.gitignore'
+  workflow_dispatch:
 
 env:
   AWS_REGION: ap-northeast-2
