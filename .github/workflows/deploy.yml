@@ -1,0 +1,207 @@
+# ============================================================
+# SeRViS EKS CI/CD Pipeline
+# main 브랜치 push 시 자동 배포
+#
+# GitHub Secrets (고정값 5개만):
+#   - AWS_ACCOUNT_ID
+#   - AWS_ACCESS_KEY_ID
+#   - AWS_SECRET_ACCESS_KEY
+#   - DB_APP_PASSWORD
+#   - JWT_SECRET
+#
+# SSM Parameter Store (terraform apply 시 자동 갱신):
+#   - /servis/rds-host
+#   - /servis/public-subnets
+#   - /servis/ecr-registry
+#   - /servis/cluster-name
+# ============================================================
+
+name: Deploy to EKS
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'terraform/**'
+      - '.gitignore'
+
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  # ============================================================
+  # 1단계: 변경된 서비스 감지
+  # ============================================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth: ${{ steps.changes.outputs.auth }}
+      team: ${{ steps.changes.outputs.team }}
+      core: ${{ steps.changes.outputs.core }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed services
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "all")
+
+          if echo "$CHANGED" | grep -q "all"; then
+            echo "auth=true" >> $GITHUB_OUTPUT
+            echo "team=true" >> $GITHUB_OUTPUT
+            echo "core=true" >> $GITHUB_OUTPUT
+          else
+            echo "auth=$(echo '$CHANGED' | grep -q 'SeRVe_auth\|Dockerfile.auth' && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "team=$(echo '$CHANGED' | grep -q 'SeRVe_team\|Dockerfile.team' && echo true || echo false)" >> $GITHUB_OUTPUT
+            echo "core=$(echo '$CHANGED' | grep -q 'SeRVe_core\|Dockerfile.core' && echo true || echo false)" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================================
+  # 2단계: 빌드 + ECR Push
+  # ============================================================
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # SSM에서 ECR Registry 주소 가져오기
+      - name: Get ECR Registry from SSM
+        id: ssm
+        run: |
+          ECR_REGISTRY=$(aws ssm get-parameter --name /servis/ecr-registry --query 'Parameter.Value' --output text)
+          echo "ecr_registry=${ECR_REGISTRY}" >> $GITHUB_OUTPUT
+
+      # Auth
+      - name: Build and Push Auth
+        if: needs.detect-changes.outputs.auth == 'true'
+        run: |
+          cd SeRVe_auth && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          docker buildx build --platform linux/amd64 \
+            -f Dockerfile.auth \
+            -t ${{ steps.ssm.outputs.ecr_registry }}/serve-auth:${{ github.sha }} \
+            -t ${{ steps.ssm.outputs.ecr_registry }}/serve-auth:latest \
+            --push .
+
+      # Team
+      - name: Build and Push Team
+        if: needs.detect-changes.outputs.team == 'true'
+        run: |
+          cd SeRVe_team && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          docker buildx build --platform linux/amd64 \
+            -f Dockerfile.team \
+            -t ${{ steps.ssm.outputs.ecr_registry }}/serve-team:${{ github.sha }} \
+            -t ${{ steps.ssm.outputs.ecr_registry }}/serve-team:latest \
+            --push .
+
+      # Core
+      - name: Build and Push Core
+        if: needs.detect-changes.outputs.core == 'true'
+        run: |
+          cd SeRVe_core && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
+          docker buildx build --platform linux/amd64 \
+            -f Dockerfile.core \
+            -t ${{ steps.ssm.outputs.ecr_registry }}/serve-core:${{ github.sha }} \
+            -t ${{ steps.ssm.outputs.ecr_registry }}/serve-core:latest \
+            --push .
+
+  # ============================================================
+  # 3단계: EKS 배포
+  # ============================================================
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-push]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # SSM에서 동적 값 가져오기
+      - name: Get config from SSM
+        id: config
+        run: |
+          echo "rds_host=$(aws ssm get-parameter --name /servis/rds-host --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+          echo "public_subnets=$(aws ssm get-parameter --name /servis/public-subnets --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+          echo "ecr_registry=$(aws ssm get-parameter --name /servis/ecr-registry --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+          echo "cluster_name=$(aws ssm get-parameter --name /servis/cluster-name --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ steps.config.outputs.cluster_name }} --region ${{ env.AWS_REGION }}
+
+      # 매니페스트에 동적 값 주입
+      - name: Prepare manifests
+        run: |
+          # secrets.yaml
+          sed -i 's|<RDS_HOST>|${{ steps.config.outputs.rds_host }}|g' k8s-manifests/secrets.yaml
+          sed -i 's|DB_PASSWORD:.*|DB_PASSWORD: "${{ secrets.DB_APP_PASSWORD }}"|g' k8s-manifests/secrets.yaml
+          sed -i 's|JWT_SECRET:.*|JWT_SECRET: "${{ secrets.JWT_SECRET }}"|g' k8s-manifests/secrets.yaml
+
+          # deployment.yaml 이미지 태그
+          for svc in auth team core; do
+            sed -i "s|image:.*serve-${svc}:.*|image: ${{ steps.config.outputs.ecr_registry }}/serve-${svc}:${{ github.sha }}|g" \
+              k8s-manifests/${svc}/deployment.yaml
+          done
+
+          # ingress.yaml 서브넷
+          sed -i 's|<PUBLIC_SUBNETS>|${{ steps.config.outputs.public_subnets }}|g' k8s-manifests/ingress.yaml
+
+      - name: Deploy to EKS
+        run: |
+          kubectl apply -f k8s-manifests/namespace.yaml
+          kubectl apply -f k8s-manifests/secrets.yaml
+          kubectl apply -f k8s-manifests/auth/
+          kubectl apply -f k8s-manifests/team/
+          kubectl apply -f k8s-manifests/core/
+          kubectl apply -f k8s-manifests/ingress.yaml
+
+      - name: Verify deployment
+        run: |
+          echo "=== Waiting for rollout ==="
+          kubectl rollout status deployment/serve-auth -n serve --timeout=120s || true
+          kubectl rollout status deployment/serve-team -n serve --timeout=120s || true
+          kubectl rollout status deployment/serve-core -n serve --timeout=120s || true
+
+          echo ""
+          echo "=== Pod Status ==="
+          kubectl get pods -n serve
+
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n serve
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed. Rolling back..."
+          kubectl rollout undo deployment/serve-auth -n serve || true
+          kubectl rollout undo deployment/serve-team -n serve || true
+          kubectl rollout undo deployment/serve-core -n serve || true
