@@ -98,7 +98,7 @@ jobs:
 
       # Auth
       - name: Build and Push Auth
-        if: needs.detect-changes.outputs.auth == 'true'
+        # if: needs.detect-changes.outputs.auth == 'true'
         run: |
           cd SeRVe_auth && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
           docker buildx build --platform linux/amd64 \
@@ -109,7 +109,7 @@ jobs:
 
       # Team
       - name: Build and Push Team
-        if: needs.detect-changes.outputs.team == 'true'
+        # if: needs.detect-changes.outputs.team == 'true'
         run: |
           cd SeRVe_team && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
           docker buildx build --platform linux/amd64 \
@@ -120,7 +120,7 @@ jobs:
 
       # Core
       - name: Build and Push Core
-        if: needs.detect-changes.outputs.core == 'true'
+        # if: needs.detect-changes.outputs.core == 'true'
         run: |
           cd SeRVe_core && chmod +x gradlew && ./gradlew bootJar -x test && cd ..
           docker buildx build --platform linux/amd64 \
