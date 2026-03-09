@@ -70,6 +70,11 @@ output "kubeconfig_command" {
   value       = "aws eks update-kubeconfig --name ${var.cluster_name} --region ${var.aws_region}"
 }
 
+output "s3_artifacts_bucket" {
+  description = "serve-core 아티팩트 S3 버킷명"
+  value       = aws_s3_bucket.servis_artifacts.bucket
+}
+
 output "ecr_login_command" {
   description = "ECR 로그인 명령어"
   value       = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
