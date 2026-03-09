@@ -33,6 +33,11 @@ service:
   auth:
     url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
+aws:
+  s3:
+    bucket: ${S3_BUCKET_NAME:servis-artifacts}
+    region: ${AWS_REGION:ap-northeast-2}
+
 management:
   endpoints:
     web:

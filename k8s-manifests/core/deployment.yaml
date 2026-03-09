@@ -15,6 +15,7 @@ spec:
       labels:
         app: serve-core
     spec:
+      serviceAccountName: serve-core-sa  # IRSA: S3 접근용 IAM Role 바인딩
       containers:
         - name: serve-core
           image: 787858640598.dkr.ecr.ap-northeast-2.amazonaws.com/serve-core:latest
@@ -47,6 +48,10 @@ spec:
               value: "http://serve-team-svc.serve.svc.cluster.local:8082"
             - name: AUTH_SERVICE_URL
               value: "http://serve-auth-svc.serve.svc.cluster.local:8081"
+            - name: S3_BUCKET_NAME
+              value: "servis-artifacts"
+            - name: AWS_REGION
+              value: "ap-northeast-2"
           resources:
             requests:
               cpu: "250m"
