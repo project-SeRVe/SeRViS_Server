@@ -1,8 +1,10 @@
 package horizon.SeRVe.core.controller;
 
+import horizon.SeRVe.core.dto.demo.DemoResponse;
 import horizon.SeRVe.core.dto.demo.DemoSyncResponse;
 import horizon.SeRVe.core.dto.demo.DemoUploadRequest;
 import horizon.SeRVe.core.service.DemoService;
+import horizon.SeRVe.core.service.ScenarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,6 +17,7 @@ import java.util.List;
 public class DemoController {
 
     private final DemoService demoService;
+    private final ScenarioService scenarioService;
 
     @PostMapping("/api/teams/{teamId}/demos")
     public ResponseEntity<Void> uploadDemos(
@@ -49,5 +52,11 @@ public class DemoController {
         List<DemoSyncResponse> response = demoService.syncTeamDemos(
                 teamId, lastVersion, userId);
         return ResponseEntity.ok(response);
+    }
+
+    // Demo 단건 조회 (새 Demo 엔티티 - 메타데이터)
+    @GetMapping("/api/demos/{demoId}")
+    public ResponseEntity<DemoResponse> getDemo(@PathVariable String demoId) {
+        return ResponseEntity.ok(scenarioService.getDemo(demoId));
     }
 }
