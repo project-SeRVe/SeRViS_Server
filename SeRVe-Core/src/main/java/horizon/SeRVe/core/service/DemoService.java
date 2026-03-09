@@ -27,6 +27,7 @@ public class DemoService {
     private final TeamServiceClient teamServiceClient;
     private final AuthServiceClient authServiceClient;
     private final RateLimitService rateLimitService;
+    private final S3StorageService s3StorageService;
 
     @Transactional
     public void uploadDemos(String teamId, String fileName, String userId, DemoUploadRequest request) {
@@ -35,13 +36,11 @@ public class DemoService {
             throw new IllegalArgumentException("팀을 찾을 수 없습니다.");
         }
 
-        // 1-1. Rate Limit 체크
+        // 1-1. Rate Limit 체크 (기존 로직 유지)
         rateLimitService.checkAndRecordUpload(userId);
 
         // 2. 멤버십 및 권한 체크 (Federated Model: MEMBER 전용, ADMIN은 Key Master 역할만)
         MemberRoleResponse memberRole = teamServiceClient.getMemberRole(teamId, userId);
-
-        // ADMIN은 업로드 금지 (Key Master 역할만 수행)
         if ("ADMIN".equals(memberRole.getRole())) {
             throw new SecurityException("ADMIN은 데이터 업로드가 불가능합니다. MEMBER만 업로드할 수 있습니다.");
         }
@@ -76,18 +75,25 @@ public class DemoService {
                     .findByTaskIdAndDemoIndex(task.getTaskId(), item.getDemoIndex());
 
             if (existingDemo.isPresent()) {
-                // UPDATE: 기존 데모 내용 갱신 (version 자동 증가)
+                // UPDATE: S3 덮어쓰기 후 objectKey 갱신 (version 자동 증가)
                 VectorDemo demo = existingDemo.get();
-                demo.updateContent(blobData);
+                String objectKey = s3StorageService.upload(demo.getObjectKey(), blobData);
+                demo.updateObjectKey(objectKey);
                 demo.setDeleted(false);
             } else {
-                // INSERT: 새 데모 생성 (version = 0)
+                // INSERT: S3 업로드 후 새 데모 생성 (version = 0)
+                String objectKey = s3StorageService.generateObjectKey(
+                        teamId, task.getTaskId(), "demo",
+                        "demo_" + item.getDemoIndex() + ".enc"
+                );
+                s3StorageService.upload(objectKey, blobData);
+
                 VectorDemo newDemo = VectorDemo.builder()
                         .demoId(UUID.randomUUID().toString())
                         .taskId(task.getTaskId())
                         .teamId(teamId)
                         .demoIndex(item.getDemoIndex())
-                        .encryptedBlob(blobData)
+                        .objectKey(objectKey)
                         .isDeleted(false)
                         .build();
                 vectorDemoRepository.save(newDemo);
@@ -104,7 +110,6 @@ public class DemoService {
 
         // 2. ADMIN 권한 체크
         MemberRoleResponse memberRole = teamServiceClient.getMemberRole(teamId, userId);
-
         if (!"ADMIN".equals(memberRole.getRole())) {
             throw new SecurityException("데모 삭제는 ADMIN 권한이 필요합니다.");
         }
@@ -113,7 +118,7 @@ public class DemoService {
         Task task = taskRepository.findByTeamIdAndOriginalFileName(teamId, fileName)
                 .orElseThrow(() -> new IllegalArgumentException("태스크를 찾을 수 없습니다."));
 
-        // 4. 데모 논리적 삭제 (version 자동 증가)
+        // 4. 데모 논리적 삭제 (version 자동 증가, 기존 로직 유지)
         VectorDemo demo = vectorDemoRepository
                 .findByTaskIdAndDemoIndex(task.getTaskId(), demoIndex)
                 .orElseThrow(() -> new IllegalArgumentException("데모를 찾을 수 없습니다."));
@@ -159,7 +164,7 @@ public class DemoService {
                         }
                 ));
 
-        // 5. DemoSyncResponse 생성 (createdBy 포함)
+        // 5. DemoSyncResponse 생성 (objectKey 포함, createdBy 포함)
         return demos.stream()
                 .map(demo -> {
                     String createdBy = taskUploaderMap.getOrDefault(demo.getTaskId(), "unknown");

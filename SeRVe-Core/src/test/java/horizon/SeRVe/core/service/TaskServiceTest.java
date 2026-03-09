@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -35,6 +36,7 @@ class TaskServiceTest {
     @Mock private VectorDemoRepository vectorDemoRepository;
     @Mock private TeamServiceClient teamServiceClient;
     @Mock private AuthServiceClient authServiceClient;
+    @Mock private S3StorageService s3StorageService;
 
     @Test
     @DisplayName("태스크 업로드 성공 테스트")
@@ -50,12 +52,17 @@ class TaskServiceTest {
 
         given(teamServiceClient.teamExists(teamId)).willReturn(true);
         given(teamServiceClient.getMemberRole(teamId, userId)).willReturn(memberRole);
+        given(s3StorageService.generateObjectKey(anyString(), anyString(), anyString(), anyString()))
+                .willReturn("team-1/task-uuid/task/test.pdf");
+        given(s3StorageService.upload(anyString(), any(byte[].class)))
+                .willReturn("team-1/task-uuid/task/test.pdf");
 
         // when
         taskService.uploadTask(teamId, userId, request);
 
         // then
         verify(taskRepository, times(1)).save(any(Task.class));
+        verify(s3StorageService, times(1)).upload(anyString(), any(byte[].class));
     }
 
     @Test
@@ -100,7 +107,7 @@ class TaskServiceTest {
         EncryptedData mockData = EncryptedData.builder()
                 .dataId("data-1")
                 .task(mockTask)
-                .encryptedBlob("secret".getBytes())
+                .objectKey("team-1/task-1/task/file.enc")
                 .build();
 
         given(taskRepository.findByTaskId(taskId)).willReturn(Optional.of(mockTask));
@@ -113,7 +120,7 @@ class TaskServiceTest {
 
         // then
         assertNotNull(response);
-        assertArrayEquals("secret".getBytes(), response.getContent());
+        assertEquals("team-1/task-1/task/file.enc", response.getObjectKey());
     }
 
     @Test
@@ -133,8 +140,6 @@ class TaskServiceTest {
         given(teamServiceClient.memberExists("team-1", userId)).willReturn(false);
 
         // when & then
-        assertThrows(SecurityException.class, () -> {
-            taskService.getData(taskId, userId);
-        });
+        assertThrows(SecurityException.class, () -> taskService.getData(taskId, userId));
     }
 }

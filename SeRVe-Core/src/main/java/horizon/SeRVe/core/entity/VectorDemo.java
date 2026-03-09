@@ -30,9 +30,8 @@ public class VectorDemo {
     @Column(name = "demo_index", nullable = false)
     private int demoIndex;
 
-    @Lob
-    @Column(name = "encrypted_blob", nullable = false, columnDefinition = "LONGBLOB")
-    private byte[] encryptedBlob;
+    @Column(name = "object_key", nullable = false, length = 500)
+    private String objectKey; // S3 key (바이너리는 S3에 저장)
 
     @Version
     @Column(name = "version", nullable = false)
@@ -59,8 +58,8 @@ public class VectorDemo {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void updateContent(byte[] newBlob) {
-        this.encryptedBlob = newBlob;
+    public void updateObjectKey(String newKey) {
+        this.objectKey = newKey;
         // version은 @Version에 의해 자동 증가
     }
 

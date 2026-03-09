@@ -10,7 +10,7 @@ public class DemoSyncResponse {
     private String taskId;
     private String demoId;
     private int demoIndex;
-    private byte[] encryptedBlob;
+    private String objectKey; // S3 key. 클라이언트가 S3에서 직접 다운로드
     private int version;
     private boolean isDeleted;
     private String createdBy;
@@ -20,7 +20,7 @@ public class DemoSyncResponse {
                 .taskId(demo.getTaskId())
                 .demoId(demo.getDemoId())
                 .demoIndex(demo.getDemoIndex())
-                .encryptedBlob(demo.getEncryptedBlob())
+                .objectKey(demo.getObjectKey())
                 .version(demo.getVersion())
                 .isDeleted(demo.isDeleted())
                 .createdBy(null)
@@ -32,7 +32,7 @@ public class DemoSyncResponse {
                 .taskId(demo.getTaskId())
                 .demoId(demo.getDemoId())
                 .demoIndex(demo.getDemoIndex())
-                .encryptedBlob(demo.getEncryptedBlob())
+                .objectKey(demo.getObjectKey())
                 .version(demo.getVersion())
                 .isDeleted(demo.isDeleted())
                 .createdBy(createdBy)

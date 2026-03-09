@@ -18,15 +18,14 @@ public class EncryptedData {
     @JoinColumn(name = "task_id")
     private Task task;
 
-    @Lob
-    @Column(nullable = false, columnDefinition = "LONGBLOB")
-    private byte[] encryptedBlob; // 실제 암호화 데이터 (바이너리)
+    @Column(nullable = false, length = 500)
+    private String objectKey; // S3 key (바이너리는 S3에 저장)
 
     @Version
     @Column(nullable = false)
     private int version;
 
-    public void updateContent(byte[] newBlob) {
-        this.encryptedBlob = newBlob;
+    public void updateObjectKey(String newKey) {
+        this.objectKey = newKey;
     }
 }

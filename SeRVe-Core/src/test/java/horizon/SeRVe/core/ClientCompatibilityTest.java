@@ -12,6 +12,7 @@ import horizon.SeRVe.core.feign.TeamServiceClient;
 import horizon.SeRVe.core.repository.TaskRepository;
 import horizon.SeRVe.core.repository.EncryptedDataRepository;
 import horizon.SeRVe.core.repository.VectorDemoRepository;
+import horizon.SeRVe.core.service.S3StorageService;
 import horizon.SeRVe.core.service.TaskService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,10 +26,14 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
 /**
  * 클라이언트(client-robot) SDK와의 호환성 검증 테스트
+ * ⚠️ S3 전환 후 변경사항:
+ *   - EncryptedDataResponse.content(byte[]) → objectKey(String)
+ *   - 클라이언트는 objectKey를 받아 S3에서 직접 다운로드해야 함
  */
 @ExtendWith(MockitoExtension.class)
 class ClientCompatibilityTest {
@@ -43,6 +48,7 @@ class ClientCompatibilityTest {
     @Mock private VectorDemoRepository vectorDemoRepository;
     @Mock private TeamServiceClient teamServiceClient;
     @Mock private AuthServiceClient authServiceClient;
+    @Mock private S3StorageService s3StorageService;
 
     // ==================== DTO 직렬화/역직렬화 테스트 ====================
 
@@ -61,21 +67,21 @@ class ClientCompatibilityTest {
     }
 
     @Test
-    @DisplayName("태스크 다운로드 응답 - content 필드로 직렬화 (encryptedBlob이 아님)")
-    void encryptedDataResponse_serializesAsContent() throws Exception {
+    @DisplayName("태스크 다운로드 응답 - objectKey 필드로 직렬화 (S3 전환 후)")
+    void encryptedDataResponse_serializesAsObjectKey() throws Exception {
         EncryptedDataResponse response = EncryptedDataResponse.builder()
                 .id(42L)
-                .content("secret-data".getBytes())
+                .objectKey("team-1/task-uuid/task/file.enc")
                 .version(1)
                 .build();
 
         String json = objectMapper.writeValueAsString(response);
 
-        // 클라이언트가 data.get('content')로 접근
-        assertTrue(json.contains("\"content\""), "필드명이 'content'여야 함");
+        // S3 전환 후: 클라이언트는 objectKey를 받아 S3에서 직접 다운로드
+        assertTrue(json.contains("\"objectKey\""), "필드명이 'objectKey'여야 함");
         assertFalse(json.contains("\"encryptedBlob\""), "encryptedBlob 필드가 없어야 함");
+        assertFalse(json.contains("\"content\""), "content 필드가 없어야 함 (S3 전환)");
         assertTrue(json.contains("\"id\""), "필드명이 'id'여야 함");
-        assertFalse(json.contains("\"taskId\""), "taskId 필드가 없어야 함");
     }
 
     @Test
@@ -88,7 +94,6 @@ class ClientCompatibilityTest {
                 .uploaderId("user-1")
                 .build();
 
-        // id 필드에 값을 설정하기 위해 리플렉션 사용 (auto-increment 필드)
         var idField = Task.class.getDeclaredField("id");
         idField.setAccessible(true);
         idField.set(task, 42L);
@@ -115,8 +120,11 @@ class ClientCompatibilityTest {
 
         given(teamServiceClient.teamExists(teamId)).willReturn(true);
         given(teamServiceClient.getMemberRole(teamId, userId)).willReturn(memberRole);
+        given(s3StorageService.generateObjectKey(anyString(), anyString(), anyString(), anyString()))
+                .willReturn("team-1/task-uuid/task/uploaded_task");
+        given(s3StorageService.upload(anyString(), any(byte[].class)))
+                .willReturn("team-1/task-uuid/task/uploaded_task");
 
-        // Task 저장 시 id 자동 생성 시뮬레이션
         given(taskRepository.save(any(Task.class))).willAnswer(invocation -> {
             Task task = invocation.getArgument(0);
             var idField = Task.class.getDeclaredField("id");
@@ -134,8 +142,8 @@ class ClientCompatibilityTest {
     }
 
     @Test
-    @DisplayName("Long id 기반 다운로드 - 정상 동작")
-    void getDataById_worksWithLongId() {
+    @DisplayName("Long id 기반 다운로드 - objectKey 반환")
+    void getDataById_returnsObjectKey() {
         // given
         Long id = 42L;
         String userId = "user-1";
@@ -148,7 +156,7 @@ class ClientCompatibilityTest {
         EncryptedData mockData = EncryptedData.builder()
                 .dataId("data-1")
                 .task(mockTask)
-                .encryptedBlob("secret".getBytes())
+                .objectKey("team-1/uuid-123/task/file.enc")
                 .build();
 
         given(taskRepository.findById(id)).willReturn(Optional.of(mockTask));
@@ -161,18 +169,15 @@ class ClientCompatibilityTest {
 
         // then
         assertNotNull(response);
-        assertArrayEquals("secret".getBytes(), response.getContent());
+        assertEquals("team-1/uuid-123/task/file.enc", response.getObjectKey());
     }
 
     @Test
     @DisplayName("업로드 응답 값이 클라이언트의 digit 파싱과 호환")
     void uploadResponse_compatibleWithClientParsing() {
-        // 클라이언트 파싱 시뮬레이션:
-        // doc_id = ''.join(filter(str.isdigit, str(data)))
         Long serverResponse = 42L;
         String asString = String.valueOf(serverResponse);
 
-        // Python의 filter(str.isdigit, str(42)) → "42"
         String digits = asString.replaceAll("[^0-9]", "");
         assertEquals("42", digits);
         assertEquals(42, Integer.parseInt(digits));

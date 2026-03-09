@@ -25,6 +25,7 @@ public class TaskService {
     private final VectorDemoRepository vectorDemoRepository;
     private final TeamServiceClient teamServiceClient;
     private final AuthServiceClient authServiceClient;
+    private final S3StorageService s3StorageService;
 
     @Transactional
     public void uploadTask(String teamId, String userId, UploadTaskRequest req) {
@@ -35,28 +36,32 @@ public class TaskService {
 
         // 2. 멤버십 및 권한 검증
         MemberRoleResponse memberRole = teamServiceClient.getMemberRole(teamId, userId);
-
         if (!"ADMIN".equals(memberRole.getRole())) {
             throw new SecurityException("태스크 업로드는 ADMIN 권한이 필요합니다.");
         }
 
-        // 3. 암호화 데이터(Blob) 변환 및 생성
+        // 3. 바이너리 변환
         byte[] blobData = Base64.getDecoder().decode(req.getEncryptedBlob());
 
         // 같은 이름의 파일이 있는지 확인
         Optional<Task> existingTask = taskRepository.findByTeamIdAndOriginalFileName(teamId, req.getFileName());
 
         if (existingTask.isPresent()) {
-            // [Case A] 이미 존재함 -> 업데이트 (Version Up)
+            // [Case A] 이미 존재함 -> S3 덮어쓰기 후 objectKey 갱신 (Version Up)
             Task task = existingTask.get();
             EncryptedData data = task.getEncryptedData();
 
-            data.updateContent(blobData);
+            String objectKey = s3StorageService.upload(data.getObjectKey(), blobData);
+            data.updateObjectKey(objectKey);
 
         } else {
-            // [Case B] 없음 -> 신규 생성 (Version 1)
+            // [Case B] 없음 -> S3 업로드 후 신규 생성 (Version 1)
+            String taskId = UUID.randomUUID().toString();
+            String objectKey = s3StorageService.generateObjectKey(teamId, taskId, "task", req.getFileName());
+            s3StorageService.upload(objectKey, blobData);
+
             Task task = Task.builder()
-                    .taskId(UUID.randomUUID().toString())
+                    .taskId(taskId)
                     .teamId(teamId)
                     .uploaderId(userId)
                     .originalFileName(req.getFileName())
@@ -66,7 +71,7 @@ public class TaskService {
             EncryptedData encryptedData = EncryptedData.builder()
                     .dataId(UUID.randomUUID().toString())
                     .task(task)
-                    .encryptedBlob(blobData)
+                    .objectKey(objectKey)
                     .build();
 
             task.setEncryptedData(encryptedData);
@@ -77,12 +82,9 @@ public class TaskService {
     // 태스크 목록 조회
     @Transactional(readOnly = true)
     public List<TaskResponse> getTasks(String teamId, String userId) {
-        // 팀 존재 확인
         if (!teamServiceClient.teamExists(teamId)) {
             throw new IllegalArgumentException("저장소를 찾을 수 없습니다.");
         }
-
-        // 멤버십 검증 (ADMIN과 MEMBER 모두 조회 가능)
         if (!teamServiceClient.memberExists(teamId, userId)) {
             throw new SecurityException("저장소 멤버가 아닙니다.");
         }
@@ -95,20 +97,19 @@ public class TaskService {
     // 클라이언트 호환 업로드 (POST /api/tasks)
     @Transactional
     public Long uploadTaskFromClient(String repositoryId, String userId, String content) {
-        // 1. 팀 존재 확인
         if (!teamServiceClient.teamExists(repositoryId)) {
             throw new IllegalArgumentException("저장소를 찾을 수 없습니다.");
         }
-
-        // 2. 멤버십 검증
         teamServiceClient.getMemberRole(repositoryId, userId);
 
-        // 3. 암호화된 콘텐츠를 바이너리로 변환
         byte[] blobData = Base64.getDecoder().decode(content);
 
-        // 4. 태스크 생성
+        String taskId = UUID.randomUUID().toString();
+        String objectKey = s3StorageService.generateObjectKey(repositoryId, taskId, "task", "uploaded_task");
+        s3StorageService.upload(objectKey, blobData);
+
         Task task = Task.builder()
-                .taskId(UUID.randomUUID().toString())
+                .taskId(taskId)
                 .teamId(repositoryId)
                 .uploaderId(userId)
                 .originalFileName("uploaded_task")
@@ -118,7 +119,7 @@ public class TaskService {
         EncryptedData encryptedData = EncryptedData.builder()
                 .dataId(UUID.randomUUID().toString())
                 .task(task)
-                .encryptedBlob(blobData)
+                .objectKey(objectKey)
                 .build();
 
         task.setEncryptedData(encryptedData);
@@ -155,7 +156,7 @@ public class TaskService {
         return EncryptedDataResponse.from(data);
     }
 
-    // 태스크 접근 권한 체크 (User 또는 EdgeNode)
+    // 태스크 접근 권한 체크 (User 또는 EdgeNode) - 기존 로직 유지
     private void checkTaskPermission(Task task, String requesterId) {
         boolean hasPermission = false;
 
@@ -190,19 +191,21 @@ public class TaskService {
                 .orElseThrow(() -> new IllegalArgumentException("태스크를 찾을 수 없습니다."));
 
         boolean isUploader = task.getUploaderId().equals(userId);
-
-        // 멤버십 및 권한 확인
         MemberRoleResponse memberRole = teamServiceClient.getMemberRole(task.getTeamId(), userId);
-
         boolean isAdmin = "ADMIN".equals(memberRole.getRole());
 
         if (!isUploader && !isAdmin) {
             throw new SecurityException("삭제 권한이 없습니다.");
         }
 
-        // 연관된 데모도 논리적 삭제 처리
+        // S3 오브젝트 삭제
+        if (task.getEncryptedData() != null && task.getEncryptedData().getObjectKey() != null) {
+            s3StorageService.delete(task.getEncryptedData().getObjectKey());
+        }
+
+        // 연관된 데모 논리적 삭제 (VectorDemo의 S3 오브젝트는 데모 자체와 함께 관리)
         List<VectorDemo> demos = vectorDemoRepository.findByTaskId(taskId);
-        demos.forEach(demo -> demo.markAsDeleted());
+        demos.forEach(VectorDemo::markAsDeleted);
 
         taskRepository.delete(task);
     }
