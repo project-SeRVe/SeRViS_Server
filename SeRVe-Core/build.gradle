@@ -15,8 +15,9 @@ dependencyManagement {
 dependencies {
     implementation project(':SeRVe-Common')
 
-    // AWS S3
+    // AWS S3 + IRSA(STS)
     implementation 'software.amazon.awssdk:s3:2.29.52'
+    implementation 'software.amazon.awssdk:sts:2.29.52'
 
     // JPA + DB
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
