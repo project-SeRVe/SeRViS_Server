@@ -1,5 +1,6 @@
 package horizon.SeRVe.core.controller;
 
+import horizon.SeRVe.core.dto.demo.DemoCreateRequest;
 import horizon.SeRVe.core.dto.demo.DemoResponse;
 import horizon.SeRVe.core.dto.scenario.ScenarioCreateRequest;
 import horizon.SeRVe.core.dto.scenario.ScenarioResponse;
@@ -34,6 +35,14 @@ public class ScenarioController {
     public ResponseEntity<ScenarioResponse> getScenario(
             @PathVariable String scenarioId) {
         return ResponseEntity.ok(scenarioService.getScenario(scenarioId));
+    }
+
+    // Scenario에 Demo 등록
+    @PostMapping("/api/scenarios/{scenarioId}/demos")
+    public ResponseEntity<DemoResponse> createDemo(
+            @PathVariable String scenarioId,
+            @RequestBody DemoCreateRequest request) {
+        return ResponseEntity.ok(scenarioService.createDemo(scenarioId, request));
     }
 
     // Scenario별 Demo 목록 조회

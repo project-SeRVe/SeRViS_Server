@@ -1,8 +1,10 @@
 package horizon.SeRVe.core.service;
 
+import horizon.SeRVe.core.dto.demo.DemoCreateRequest;
 import horizon.SeRVe.core.dto.demo.DemoResponse;
 import horizon.SeRVe.core.dto.scenario.ScenarioCreateRequest;
 import horizon.SeRVe.core.dto.scenario.ScenarioResponse;
+import horizon.SeRVe.core.entity.Demo;
 import horizon.SeRVe.core.entity.Scenario;
 import horizon.SeRVe.core.repository.DemoRepository;
 import horizon.SeRVe.core.repository.ScenarioRepository;
@@ -67,6 +69,27 @@ public class ScenarioService {
         return demoRepository.findByScenario_ScenarioId(scenarioId).stream()
                 .map(DemoResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    // Demo 생성 (Scenario에 연결)
+    @Transactional
+    public DemoResponse createDemo(String scenarioId, DemoCreateRequest request) {
+        Scenario scenario = scenarioRepository.findById(scenarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Scenario를 찾을 수 없습니다."));
+
+        Demo demo = Demo.builder()
+                .demoId(UUID.randomUUID().toString())
+                .scenario(scenario)
+                .numSteps(request.getNumSteps())
+                .stateDim(request.getStateDim())
+                .actionDim(request.getActionDim())
+                .imageH(request.getImageH())
+                .imageW(request.getImageW())
+                .embedDim(request.getEmbedDim())
+                .embedModelId(request.getEmbedModelId())
+                .build();
+
+        return DemoResponse.from(demoRepository.save(demo));
     }
 
     // Demo 단건 조회 (새 Demo 엔티티)
