@@ -78,16 +78,25 @@ resource "aws_iam_role_policy_attachment" "serve_core_s3" {
   role       = aws_iam_role.serve_core.name
 }
 
+# --- serve 네임스페이스 ---
+resource "kubernetes_namespace" "serve" {
+  metadata {
+    name = "serve"
+  }
+
+  depends_on = [aws_eks_node_group.this]
+}
+
 # --- serve-core ServiceAccount (LB Controller와 동일한 패턴) ---
 resource "kubernetes_service_account" "serve_core" {
   metadata {
     name      = "serve-core-sa"
-    namespace = "serve"
+    namespace = kubernetes_namespace.serve.metadata[0].name
 
     annotations = {
       "eks.amazonaws.com/role-arn" = aws_iam_role.serve_core.arn
     }
   }
 
-  depends_on = [aws_eks_node_group.this]
+  depends_on = [kubernetes_namespace.serve]
 }
