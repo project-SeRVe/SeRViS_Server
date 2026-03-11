@@ -7,24 +7,16 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-
-import java.time.Duration;
 
 @Service
 public class S3StorageService {
 
     private final S3Client s3Client;
-    private final S3Presigner s3Presigner;
     private final String bucketName;
 
     public S3StorageService(S3Client s3Client,
-                            S3Presigner s3Presigner,
                             @Value("${aws.s3.bucket}") String bucketName) {
         this.s3Client = s3Client;
-        this.s3Presigner = s3Presigner;
         this.bucketName = bucketName;
     }
 
@@ -54,19 +46,6 @@ public class S3StorageService {
                 .key(objectKey)
                 .build();
         s3Client.deleteObject(request);
-    }
-
-    // Presigned URL 발급 (기본 15분 유효)
-    public String generatePresignedUrl(String objectKey) {
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(15))
-                .getObjectRequest(GetObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(objectKey)
-                        .build())
-                .build();
-        PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
-        return presigned.url().toString();
     }
 
     // objectKey 생성 헬퍼

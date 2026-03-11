@@ -130,7 +130,7 @@ public class TaskService {
 
     // 데이터 다운로드 (Long id 기반 - 클라이언트 호환)
     @Transactional(readOnly = true)
-    public EncryptedDataResponse getDataById(Long id, String requesterId) {
+    public byte[] getDataById(Long id, String requesterId) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("태스크를 찾을 수 없습니다."));
 
@@ -139,7 +139,7 @@ public class TaskService {
         EncryptedData data = encryptedDataRepository.findByTask(task)
                 .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
 
-        return EncryptedDataResponse.from(data);
+        return s3StorageService.download(data.getObjectKey());
     }
 
     // 데이터 다운로드 (UUID 기반 - 내부 API용)
@@ -182,20 +182,6 @@ public class TaskService {
         if (!hasPermission) {
             throw new SecurityException("접근 권한이 없습니다 (멤버 아님).");
         }
-    }
-
-    // 다운로드용 Presigned URL 발급
-    @Transactional(readOnly = true)
-    public String getPresignedUrl(Long id, String requesterId) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("태스크를 찾을 수 없습니다."));
-
-        checkTaskPermission(task, requesterId);
-
-        EncryptedData data = encryptedDataRepository.findByTask(task)
-                .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
-
-        return s3StorageService.generatePresignedUrl(data.getObjectKey());
     }
 
     // 태스크 삭제
