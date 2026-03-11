@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -61,6 +62,17 @@ public class TaskController {
         String userId = (String) authentication.getPrincipal();
         EncryptedDataResponse response = taskService.getDataById(id, userId);
         return ResponseEntity.ok(response);
+    }
+
+    // Presigned URL 발급 (클라이언트가 S3에서 직접 다운로드)
+    @GetMapping("/api/tasks/{id}/presigned-url")
+    public ResponseEntity<Map<String, String>> getPresignedUrl(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String userId = (String) authentication.getPrincipal();
+        String url = taskService.getPresignedUrl(id, userId);
+        return ResponseEntity.ok(Map.of("presignedUrl", url));
     }
 
     @DeleteMapping("/api/teams/{teamId}/tasks/{taskId}")

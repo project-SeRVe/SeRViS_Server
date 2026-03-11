@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 public class S3Config {
@@ -17,6 +18,13 @@ public class S3Config {
         // EKS에서는 IRSA(IAM Roles for Service Accounts)로 자동 인증
         // 로컬에서는 ~/.aws/credentials 또는 환경변수 AWS_ACCESS_KEY_ID/SECRET_ACCESS_KEY 사용
         return S3Client.builder()
+                .region(Region.of(region))
+                .build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner() {
+        return S3Presigner.builder()
                 .region(Region.of(region))
                 .build();
     }

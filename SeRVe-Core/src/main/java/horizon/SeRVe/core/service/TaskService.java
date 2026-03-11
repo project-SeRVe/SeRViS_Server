@@ -184,6 +184,20 @@ public class TaskService {
         }
     }
 
+    // 다운로드용 Presigned URL 발급
+    @Transactional(readOnly = true)
+    public String getPresignedUrl(Long id, String requesterId) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("태스크를 찾을 수 없습니다."));
+
+        checkTaskPermission(task, requesterId);
+
+        EncryptedData data = encryptedDataRepository.findByTask(task)
+                .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
+
+        return s3StorageService.generatePresignedUrl(data.getObjectKey());
+    }
+
     // 태스크 삭제
     @Transactional
     public void deleteTask(String taskId, String userId) {
