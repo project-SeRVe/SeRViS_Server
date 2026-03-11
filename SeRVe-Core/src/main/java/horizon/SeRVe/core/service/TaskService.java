@@ -128,9 +128,9 @@ public class TaskService {
         return saved.getId();
     }
 
-    // 데이터 다운로드 (Long id 기반 - 클라이언트 호환)
+    // 데이터 다운로드 - presigned URL 반환 (엣지/클라이언트가 S3에서 직접 다운로드)
     @Transactional(readOnly = true)
-    public byte[] getDataById(Long id, String requesterId) {
+    public String getPresignedUrl(Long id, String requesterId) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("태스크를 찾을 수 없습니다."));
 
@@ -139,7 +139,7 @@ public class TaskService {
         EncryptedData data = encryptedDataRepository.findByTask(task)
                 .orElseThrow(() -> new IllegalArgumentException("데이터가 존재하지 않습니다."));
 
-        return s3StorageService.download(data.getObjectKey());
+        return s3StorageService.generatePresignedUrl(data.getObjectKey());
     }
 
     // 데이터 다운로드 (UUID 기반 - 내부 API용)
