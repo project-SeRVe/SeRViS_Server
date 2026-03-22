@@ -7,6 +7,11 @@
 resource "aws_route53_zone" "this" {
   name = "ssucheckmate.com"
   tags = { Name = "${var.project_name}-hosted-zone" }
+
+  # terraform destroy 시에도 삭제하지 않음 → 네임서버 고정
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # ACM 인증서 발급 (DNS 검증 방식)
