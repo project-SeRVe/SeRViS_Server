@@ -58,7 +58,7 @@ public class RepoService {
                     } catch (Exception e) {
                         ownerEmail = "Unknown";
                     }
-                    return RepoResponse.of(team, ownerEmail);
+                    return RepoResponse.of(team, ownerEmail, member.getRole());
                 })
                 .collect(Collectors.toList());
     }

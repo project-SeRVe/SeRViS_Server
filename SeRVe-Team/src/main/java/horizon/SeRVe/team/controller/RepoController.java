@@ -30,7 +30,7 @@ public class RepoController {
                 userId,
                 request.getEncryptedTeamKey()
         );
-        return ResponseEntity.ok(Map.of("id", repoId));
+        return ResponseEntity.ok(Map.of("id", repoId, "role", "ADMIN"));
     }
 
     // 내 저장소 목록 조회
