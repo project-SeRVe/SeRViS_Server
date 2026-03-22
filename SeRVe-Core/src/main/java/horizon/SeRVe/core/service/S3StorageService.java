@@ -8,7 +8,9 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
 
@@ -65,6 +67,18 @@ public class S3StorageService {
                         .build())
                 .build();
         return s3Presigner.presignGetObject(presignRequest).url().toString();
+    }
+
+    // Presigned PUT URL 발급 (15분 유효) - 클라이언트가 S3에 직접 업로드
+    public String generatePresignedUploadUrl(String objectKey) {
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(15))
+                .putObjectRequest(PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(objectKey)
+                        .build())
+                .build();
+        return s3Presigner.presignPutObject(presignRequest).url().toString();
     }
 
     // objectKey 생성 헬퍼

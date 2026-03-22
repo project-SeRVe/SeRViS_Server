@@ -89,3 +89,18 @@ output "deploy_info" {
     public_subnets = join(",", aws_subnet.public[*].id)
   }
 }
+
+output "acm_certificate_arn" {
+  description = "ACM 인증서 ARN"
+  value       = aws_acm_certificate_validation.this.certificate_arn
+}
+
+output "hosted_zone_id" {
+  description = "Route 53 Hosted Zone ID"
+  value       = aws_route53_zone.this.zone_id
+}
+
+output "hosted_zone_name_servers" {
+  description = "Hosted Zone 네임서버 (도메인 등록 정보에 수동 입력 필요)"
+  value       = aws_route53_zone.this.name_servers
+}

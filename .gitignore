@@ -35,6 +35,7 @@ k8s-manifests/secrets.yaml
 
 # Others
 node_modules/
+client-robot/venv/
 
 # If you add more local config files, list them here
 
@@ -46,19 +47,16 @@ mariadb_data
 .claude/
 .clinerules
 CLAUDE.md
-README_Client.md
-MSA_PLAN.md
-BLOG_MSA_MIGRATION.md
-EKS_DEPLOY_PLAN.md
-infra_architecture.md
-REPORT.md
+
+# Personal notes & references
+notes/
 
 
 # Terraform
 .terraform/
 .terraform.lock.hcl
 *.tfstate
-*.tfstate.backup
+*.tfstate*.backup
 *.tfplan
 
 # 민감 정보
