@@ -97,10 +97,10 @@ output "acm_certificate_arn" {
 
 output "hosted_zone_id" {
   description = "Route 53 Hosted Zone ID"
-  value       = aws_route53_zone.this.zone_id
+  value       = data.aws_route53_zone.this.zone_id
 }
 
 output "hosted_zone_name_servers" {
   description = "Hosted Zone 네임서버 (도메인 등록 정보에 수동 입력 필요)"
-  value       = aws_route53_zone.this.name_servers
+  value       = data.aws_route53_zone.this.name_servers
 }

@@ -17,10 +17,10 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
-    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:ap-northeast-2:787858640598:certificate/c9356eb4-45e1-431b-8e21-bfd3420130b7"
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:ap-northeast-2:787858640598:certificate/ac6b69ba-bf73-4d3f-9740-b7c0077a7319"
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
     alb.ingress.kubernetes.io/group.name: serve-alb
-    alb.ingress.kubernetes.io/subnets: "subnet-03d32d8ed4bd12dde,subnet-0d1b1d9d73e75f4f7"
+    alb.ingress.kubernetes.io/subnets: "subnet-05fda4bd69f1fd999,subnet-052f04e1759de0299"
 spec:
   rules:
     - host: api.ssucheckmate.com

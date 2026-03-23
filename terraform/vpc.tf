@@ -122,3 +122,18 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
 }
+
+# --- S3 Gateway VPC Endpoint ---
+# Core Pod가 NAT Gateway 대신 AWS 내부 백본으로 S3에 접근하도록 설정
+# Gateway 타입은 생성/사용 비용 없음, NAT GW 데이터 처리 비용 절감
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.this.id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = [aws_route_table.private.id]
+
+  tags = {
+    Name = "${var.project_name}-s3-endpoint"
+  }
+}

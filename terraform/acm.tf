@@ -4,14 +4,10 @@
 
 # Hosted Zone 신규 생성 (기존 Hosted Zone이 없는 경우)
 # ⚠️ terraform apply 후 아래 '네임서버 수동 업데이트' 단계 필수
-resource "aws_route53_zone" "this" {
+# Hosted Zone은 AWS 콘솔에서 최초 1회 수동 생성 후 data로 조회만 함
+# → terraform destroy 시에도 삭제되지 않아 네임서버 고정
+data "aws_route53_zone" "this" {
   name = "ssucheckmate.com"
-  tags = { Name = "${var.project_name}-hosted-zone" }
-
-  # terraform destroy 시에도 삭제하지 않음 → 네임서버 고정
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # ACM 인증서 발급 (DNS 검증 방식)
@@ -36,7 +32,7 @@ resource "aws_route53_record" "acm_validation" {
     }
   }
 
-  zone_id = aws_route53_zone.this.zone_id
+  zone_id = data.aws_route53_zone.this.zone_id
   name    = each.value.name
   type    = each.value.type
   ttl     = 60
@@ -63,7 +59,7 @@ resource "aws_ssm_parameter" "acm_arn" {
 resource "aws_ssm_parameter" "hosted_zone_id" {
   name      = "/servis/hosted-zone-id"
   type      = "String"
-  value     = aws_route53_zone.this.zone_id
+  value     = data.aws_route53_zone.this.zone_id
   overwrite = true
   tags      = { Name = "${var.project_name}-hosted-zone-id" }
 }
